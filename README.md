@@ -15,6 +15,6 @@
 ## Plan
 | Week    | Họ và tên                   | Task            |
 | :-----: |:----------------------------| :--------------:|
-| 1       | Nguyễn Hoàng Vũ </br>   Trần Hoàng Thái           | 19127632        |
-| 2       | Trần Hoàng Thái             | 19127546        |
-| 3       | Nguyễn Anh Tuấn             | 19127614        |
+| 1       | Nguyễn Hoàng Vũ </br>   Trần Hoàng Thái   </br>   Nguyễn Anh Tuấn        |        |
+| 2       |             |         |
+| 3       |             |       |
