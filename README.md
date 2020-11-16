@@ -13,3 +13,8 @@
 | 3       | Nguyễn Anh Tuấn             | 19127614        |
 
 ## Plan
+| Week    | Họ và tên                   | Task            |
+| :-----: |:----------------------------| :--------------:|
+| 1       | Nguyễn Hoàng Vũ             |         |
+|          Trần Hoàng Thái             |        |
+|           Nguyễn Anh Tuấn             |        |
