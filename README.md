@@ -1,6 +1,6 @@
 # MangMayTinh_19CLC9
 
-<p align="center">
+<p align="center" style= "background-color:black">
 <img width="300" height="300" src="https://i.ibb.co/hMWfQYg/hcmus.png">
 </p>
 
