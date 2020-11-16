@@ -2,6 +2,9 @@
 <p align="center">
 <img width="300" height="300" src="https://i.ibb.co/hMWfQYg/hcmus.png">
 </p>
-Nguyen Hoang Vu - 19127632 </br>
-Tran Hoang Thai - </br>
-Nguyen Anh Tuan - 19127614</br>
+
+| STT     | Họ và tên                   | MSSV            |
+| :-----: |:----------------------------| :--------------:|
+| 1       | Nguyễn Hoàng Vũ             | 19127632        |
+| 2       | Trần Hoàng Thái             |                 |
+| 3       | Nguyễn Anh Tuấn             | 19127614        |
