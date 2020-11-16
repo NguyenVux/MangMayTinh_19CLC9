@@ -3,7 +3,7 @@
 <img width="300" height="300" src="https://i.ibb.co/hMWfQYg/hcmus.png">
 </p>
 
-## Member
+## Members
 
 | STT     | Họ và tên                   | MSSV            |
 | :-----: |:----------------------------| :--------------:|
