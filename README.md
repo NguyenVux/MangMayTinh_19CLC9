@@ -14,7 +14,7 @@
 
 ## Chức Năng
 | Week    |     Task        |
-| :-----: |                |
+| :-----: | :-------------------:|
 | 1       | Chức năng kết nối từ Client đến Server|
 | 2       |                     |
 | 3       |                    |
