@@ -33,6 +33,6 @@ class Client:
 
     def input_handler(self):
         while 1:
-            self.s.send((self.username+' - '+input()).encode())
+            self.s.send(("["+self.username+"]:"+' - '+input()).encode())
 
 client = Client()

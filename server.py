@@ -53,7 +53,7 @@ class Server:
                 break
 
             if msg.decode() != '':
-                print('New message: '+str(msg.decode()))
+                print(str(msg.decode()))
                 for connection in self.clients:
                     if connection != c:
                         connection.send(msg)
