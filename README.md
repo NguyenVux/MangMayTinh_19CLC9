@@ -4,7 +4,7 @@
 <img width="300" height="300" src="https://i.ibb.co/hMWfQYg/hcmus.png">
 </p>
 
-## Members
+## Thành Viên
 
 | STT     | Họ và tên                   | MSSV            |
 | :-----: |:----------------------------| :--------------:|
@@ -12,9 +12,9 @@
 | 2       | Trần Hoàng Thái             | 19127546        |
 | 3       | Nguyễn Anh Tuấn             | 19127614        |
 
-## Plan
-| Week    | Họ và tên                   | Task            |
-| :-----: |:----------------------------| :--------------:|
-| 1       | Nguyễn Hoàng Vũ </br>   Trần Hoàng Thái   </br>   Nguyễn Anh Tuấn        |        |
-| 2       |             |         |
-| 3       |             |       |
+## Chức Năng
+| Week    |     Task        |
+| :-----: |                |
+| 1       | Chức năng kết nối từ Client đến Server|
+| 2       |                     |
+| 3       |                    |
