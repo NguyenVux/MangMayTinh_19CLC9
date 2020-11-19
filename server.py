@@ -1,13 +1,12 @@
 import socket
 import threading
-
 class Server:
     def __init__(self):
         self.start_server()
 
     def start_server(self):
         self.s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        
+
         host = socket.gethostbyname(socket.gethostname())
         port = int(input('Enter port to run the server on --> '))
 
@@ -23,9 +22,8 @@ class Server:
 
         while True:
             c, addr = self.s.accept()
-
             username = c.recv(1024).decode()
-            
+            c.setblocking(0)
             print('New connection. Username: '+str(username))
             self.broadcast('New person joined the room. Username: '+username)
 
@@ -33,7 +31,7 @@ class Server:
 
             self.clients.append(c)
              
-            threading.Thread(target=self.handle_client,args=(c,addr,)).start()
+            threading.Thread(target=self.handle_client, args=(c, addr,)).start()
 
     def broadcast(self,msg):
         for connection in self.clients:
@@ -43,19 +41,26 @@ class Server:
         while True:
             try:
                 msg = c.recv(1024)
-            except:
-                c.shutdown(socket.SHUT_RDWR)
-                self.clients.remove(c)
-                
-                print(str(self.username_lookup[c])+' left the room.')
-                self.broadcast(str(self.username_lookup[c])+' has left the room.')
+                print("SOCK")
+                if msg.decode() != '':
+                    print(str(msg.decode()))
+                    for connection in self.clients:
+                        if connection != c:
+                            connection.send(msg)
+            except socket.error as err:
+                continue
+            # except socket.error as err:
+            #     if err == errno.EAGAIN or err == errno.EWOULDBLOCK:
+            #         print('No data')
+            #         continue
+            #     else:
+            #         c.shutdown(socket.SHUT_RDWR)
+            #         self.clients.remove(c)
+            #
+            #         print(str(self.username_lookup[c])+' left the room.')
+            #         self.broadcast(str(self.username_lookup[c])+' has left the room.')
+            #
+            #     break
 
-                break
-
-            if msg.decode() != '':
-                print(str(msg.decode()))
-                for connection in self.clients:
-                    if connection != c:
-                        connection.send(msg)
 
 server = Server()
