@@ -12,8 +12,14 @@ class User(dict):
 
 def authenticate(user):
     print(user)
-    user_data = {"name": 'VU'}
-    return user_data, True
+    file = open("testdata.json")
+    filejson = json.loads(file.read())
+    if user["uuid"] in filejson:
+        user_data = filejson[user["uuid"]]
+        if user_data["pwd"] == user["pwd"]:
+            user_data.pop("pwd", None)
+            return user_data, True
+    return {}, False
 
 
 def signup(user):
@@ -67,7 +73,7 @@ class Server:
                     if result:
                         authed_user = User(connection)
                         authed_user |= user
-                        connection.send(json.dumps({"action": "dk","result": "succeed"}).encode())
+                        connection.send(json.dumps({"action": "dk", "result": "succeed"}).encode())
                         continue
                     connection.send(json.dumps({"action": "dk", "result": "failed"}).encode())
                 if action == "dn":
@@ -76,9 +82,9 @@ class Server:
                         authed_user = User(connection)
                         authed_user |= user
                         self.__lstUser.append(authed_user)
-                        connection.send(json.dumps({"action": "dn","result": "succeed"}|user).encode())
+                        connection.send(json.dumps({"action": "dn_s", "result": "succeed"}|user).encode())
                         break
-                    connection.send(json.dumps({"action": "dn", "result": "failed"}).encode())
+                    connection.send(json.dumps({"action": "dn_f", "result": "failed"}).encode())
             except socket.error as error:
                 if error.errno == errno.ECONNRESET:
                     print("Client disconnected")

@@ -17,33 +17,23 @@ class Client:
             except:
                 print("Couldn't connect to server")
         action = ""
-        while action != 0:
-            action=input('Choose what you want')
-            if(action=="dn"):
+        result = dict(result="failed")
+        while result["result"] != "succeed":
+            action = input('Choose what you want')
+            if action == "dn":
                 print("Login")
                 username = input('Enter username --> ')
                 password = input('Enter password --> ')
-                loginJSON = json.dumps({"uuid":username, "pwd":password, "action":action})
+                loginJSON = json.dumps({"uuid": username, "pwd":password, "action":action})
                 self.s.send(loginJSON.encode())
                 result = json.loads(self.s.recv(1024).decode())
-                if (result):
+                if result["result"] == "succeed":
                     print("Succeed")
                     print("user info " + result["name"])
                 else:
                     print("Fail")
-            if (action == 2):
-                print("dk")
-                username = input('Enter username --> ')
-                password = input('Enter password --> ')
-                registerJSON = json.dumps({"uuid": username, "pwd": password, "action:": action})
-                self.s.send(registerJSON.encode())
-                result = self.s.recv(1024)
-                if(result):
-                    print("Succeed")
 
-                else:
-                    print("Fail")
-        if(action=="dn"and result==1):
+        if action == "dn" and result["result"] == "succeed":
             message_handler = threading.Thread(target=self.handle_messages, args=())
             message_handler.start()
 
