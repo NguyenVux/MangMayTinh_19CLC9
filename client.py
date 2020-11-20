@@ -1,6 +1,6 @@
 import socket
 import threading
-
+import json
 class Client:
     def __init__(self):
         self.create_connection()
@@ -17,9 +17,11 @@ class Client:
                 break
             except:
                 print("Couldn't connect to server")
-
-        self.username = input('Enter username --> ')
-        self.s.send(self.username.encode())
+        print("Login")
+        username = input('Enter username --> ')
+        password = input('Enter password --> ')
+        loginJSON = json.dumps({"uuid":username, "pwd":password})
+        self.s.send(loginJSON.encode())
         
         message_handler = threading.Thread(target=self.handle_messages,args=())
         message_handler.start()
