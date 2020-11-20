@@ -1,13 +1,25 @@
+import errno
 import threading
 import socket
 import json
 
 
 class User(dict):
-    def __init__(self, name: str, connection):
+    def __init__(self, connection):
         dict.__init__(self)
         self.update({'connection': connection})
-        self.update({'name': name})
+
+
+def authenticate(user):
+    print(user)
+    user_data = {"name": 'VU'}
+    return user_data, True
+
+
+def signup(user):
+    print(user)
+    user_data = dict(uuid="123", pwd="321")
+    return user_data, True
 
 
 class Room:
@@ -38,17 +50,40 @@ class Server:
         print('Running on host: ' + str(host))
         print('Running on port: ' + str(port))
         while True:
-            connection, addr = self.__socketServer.accept()
-            authenticate_thread = threading.Thread(target=self.__authenticate, args=(connection, ))
+            connection, address = self.__socketServer.accept()
+            authenticate_thread = threading.Thread(target=self.__login, args=(connection,))
             authenticate_thread.start()
 
-    def __authenticate(self, connection: socket):
-        msg = connection.recv(1024)
-        userlogin = json.loads(msg.decode())
-        if(userlogin["uuid"] == "vu" and userlogin["pwd"] == "123"):
-            connection.send(True)
-        else:
-            connection.send(False)
+    def __login(self, connection: socket):
+        print("Client Connected")
+        while True:
+            try:
+                msg = connection.recv(4096).decode()
+                print(msg)
+                msg = json.loads(msg)
+                action = msg["action"]
+                if action == "dk":
+                    user, result = signup(connection)
+                    if result:
+                        authed_user = User(connection)
+                        authed_user |= user
+                        connection.send(json.dumps({"action": "dk","result": "succeed"}).encode())
+                        continue
+                    connection.send(json.dumps({"action": "dk", "result": "failed"}).encode())
+                if action == "dn":
+                    user, result = authenticate(msg)
+                    if result:
+                        authed_user = User(connection)
+                        authed_user |= user
+                        self.__lstUser.append(authed_user)
+                        connection.send(json.dumps({"action": "dn","result": "succeed"}|user).encode())
+                        break
+                    connection.send(json.dumps({"action": "dn", "result": "failed"}).encode())
+            except socket.error as error:
+                if error.errno == errno.ECONNRESET:
+                    print("Client disconnected")
+                    break
+
 
 s = Server()
 s.start_server()

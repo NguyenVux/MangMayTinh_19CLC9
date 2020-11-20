@@ -13,21 +13,22 @@ class Client:
                 host = input('Enter host name --> ')
                 port = int(input('Enter port --> '))
                 self.s.connect((host,port))
-                
                 break
             except:
                 print("Couldn't connect to server")
+        action = ""
         while action != 0:
             action=input('Choose what you want')
             if(action=="dn"):
                 print("Login")
                 username = input('Enter username --> ')
                 password = input('Enter password --> ')
-                loginJSON = json.dumps({"uuid":username, "pwd":password, "action:":action})
+                loginJSON = json.dumps({"uuid":username, "pwd":password, "action":action})
                 self.s.send(loginJSON.encode())
-                result = self.s.recv(1024)
+                result = json.loads(self.s.recv(1024).decode())
                 if (result):
                     print("Succeed")
+                    print("user info " + result["name"])
                 else:
                     print("Fail")
             if (action == 2):
@@ -39,6 +40,7 @@ class Client:
                 result = self.s.recv(1024)
                 if(result):
                     print("Succeed")
+
                 else:
                     print("Fail")
         if(action=="dn"and result==1):
