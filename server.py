@@ -12,7 +12,7 @@ class Server:
 
         self.clients = []
 
-        self.s.bind((host,port))
+        self.s.bind((host, port))
         self.s.listen(100)
     
         print('Running on host: '+str(host))

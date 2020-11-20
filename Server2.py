@@ -32,15 +32,24 @@ class Server:
     def start_server(self):
         host = socket.gethostbyname(socket.gethostname())
         port = int(input('Enter port to run the server on --> '))
+
         self.__socketServer.bind((host, port))
         self.__socketServer.listen(100)
+        print('Running on host: ' + str(host))
+        print('Running on port: ' + str(port))
         while True:
             connection, addr = self.__socketServer.accept()
             authenticate_thread = threading.Thread(target=self.__authenticate, args=(connection, ))
             authenticate_thread.start()
 
     def __authenticate(self, connection: socket):
-        connection.send("PLEASE LOGIN - JSON string".encode())
+        connection.send("PLEASE LOGIN: ".encode())
+        file = open("UserFile.json", "w")
+        name = connection.recv(1024)
+        password = connection.recv(1024)
+        user = {"name": name, "password": password }
+        json.dump(user, file)
+        file.close()
         msg = connection.recv(1024)
 
 s = Server()
