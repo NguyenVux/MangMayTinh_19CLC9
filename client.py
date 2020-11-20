@@ -5,7 +5,7 @@ class Client:
     def __init__(self):
         self.create_connection()
 
-    def create_connection(self, connection: socket):
+    def create_connection(self):
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         while 1:
@@ -25,7 +25,7 @@ class Client:
                 password = input('Enter password --> ')
                 loginJSON = json.dumps({"uuid":username, "pwd":password, "action:":action})
                 self.s.send(loginJSON.encode())
-                result = connection.recv(1024)
+                result = self.s.recv(1024)
                 if (result):
                     print("Succeed")
                 else:
@@ -36,7 +36,7 @@ class Client:
                 password = input('Enter password --> ')
                 registerJSON = json.dumps({"uuid": username, "pwd": password, "action:": action})
                 self.s.send(registerJSON.encode())
-                result = connection.recv(1024)
+                result = self.s.recv(1024)
                 if(result):
                     print("Succeed")
                 else:
