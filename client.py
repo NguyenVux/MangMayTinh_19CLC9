@@ -25,6 +25,11 @@ class Client:
                 password = input('Enter password --> ')
                 loginJSON = json.dumps({"uuid":username, "pwd":password, "action:":action})
                 self.s.send(loginJSON.encode())
+                result = connection.recv(1024)
+                if (result):
+                    print("Succeed")
+                else:
+                    print("Fail")
             if (action == 2):
                 print("dk")
                 username = input('Enter username --> ')
@@ -36,11 +41,12 @@ class Client:
                     print("Succeed")
                 else:
                     print("Fail")
-        message_handler = threading.Thread(target=self.handle_messages, args=())
-        message_handler.start()
+        if(action=="dn"and result==1):
+            message_handler = threading.Thread(target=self.handle_messages, args=())
+            message_handler.start()
 
-        input_handler = threading.Thread(target=self.input_handler, args=())
-        input_handler.start()
+            input_handler = threading.Thread(target=self.input_handler, args=())
+            input_handler.start()
 
     def handle_messages(self):
         while 1:
