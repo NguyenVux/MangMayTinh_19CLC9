@@ -44,13 +44,8 @@ class Server:
 
     def __authenticate(self, connection: socket):
         connection.send("PLEASE LOGIN: ".encode())
-        file = open("UserFile.json", "w")
-        name = connection.recv(1024)
-        password = connection.recv(1024)
-        user = {"name": name, "password": password }
-        json.dump(user, file)
-        file.close()
         msg = connection.recv(1024)
+        print(msg.encode())
 
 s = Server()
 s.start_server()
