@@ -45,7 +45,10 @@ class Server:
     def __authenticate(self, connection: socket):
         msg = connection.recv(1024)
         userlogin = json.loads(msg.decode())
-        print(userlogin["uuid"])
+        if(userlogin["uuid"] == "vu" and userlogin["pwd"] == "123"):
+            connection.send(True)
+        else:
+            connection.send(False)
 
 s = Server()
 s.start_server()
