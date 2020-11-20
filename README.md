@@ -16,5 +16,5 @@
 | Week    |     Task        |
 | :-----: | :-------------------:|
 | 1       | Chức năng kết nối từ Client đến Server|
-| 2       |                     |
+| 2       |    Đăng nhập, đăng ký             |
 | 3       |                    |
