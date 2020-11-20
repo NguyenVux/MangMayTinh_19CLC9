@@ -43,9 +43,9 @@ class Server:
             authenticate_thread.start()
 
     def __authenticate(self, connection: socket):
-        connection.send("PLEASE LOGIN: ".encode())
         msg = connection.recv(1024)
-        print(msg.encode())
+        userlogin = json.loads(msg.decode())
+        print(userlogin["uuid"])
 
 s = Server()
 s.start_server()
