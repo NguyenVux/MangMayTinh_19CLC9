@@ -10,7 +10,7 @@ class Client:
                 self.s.connect((host,port))
                 break
             except:
-                print("Couldn't connect to server")
+                return False
         action = ""
         result = dict(result="failed")
         while result["result"] != "succeed":
