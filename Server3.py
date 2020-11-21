@@ -5,7 +5,7 @@ import json
 
 
 class User(dict):
-    def __init__(self, connection):
+    def __init__(self, uuid: str, connection: socket):
         dict.__init__(self)
         self.update({'connection': connection})
 
@@ -55,6 +55,7 @@ class Server:
         self.__socketServer.listen(100)
         print('Running on host: ' + str(host))
         print('Running on port: ' + str(port))
+        threading.thread(target=self.__server_loop(), args=()).start()
         while True:
             connection, address = self.__socketServer.accept()
             authenticate_thread = threading.Thread(target=self.__login, args=(connection,))
@@ -71,7 +72,7 @@ class Server:
                 if action == "dk":
                     user, result = signup(connection)
                     if result:
-                        authed_user = User(connection)
+                        authed_user = User(msg["uuid"], connection)
                         authed_user |= user
                         connection.send(json.dumps({"action": "dk", "result": "succeed"}).encode())
                         continue
@@ -82,13 +83,32 @@ class Server:
                         authed_user = User(connection)
                         authed_user |= user
                         self.__lstUser.append(authed_user)
-                        connection.send(json.dumps({"action": "dn_s", "result": "succeed"}|user).encode())
+                        connection.send(json.dumps({"action": "dn", "result": "succeed"} | user).encode())
+                        connection.setblocking(0)
                         break
-                    connection.send(json.dumps({"action": "dn_f", "result": "failed"}).encode())
+                    connection.send(json.dumps({"action": "dn", "result": "failed"}).encode())
             except socket.error as error:
                 if error.errno == errno.ECONNRESET:
                     print("Client disconnected")
                     break
+
+    def __server_loop(self):
+        while True:
+            lst_length = len(self.__lstUser)
+            for i in range(0, lst_length - 1):
+                # print(self.__lstUser[i])
+                user = self.__lstUser[i]
+                try:
+                    msg = user["connection"].recv(4096).decode()
+                except socket.error as error:
+                    if error.errno == errno.EWOULDBLOCK or error.errno == errno.EAGAIN:
+                        continue
+                    if error.errno == errno.ECONNRESET:
+                        print("Client disconnected")
+                        self.__lstUser.pop(i)
+                        break
+
+    # async def event_handling(self,msg: str, connection: socket):
 
 
 s = Server()
