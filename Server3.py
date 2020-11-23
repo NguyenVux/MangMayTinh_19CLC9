@@ -106,36 +106,8 @@ class Server:
                     print("Client disconnected")
                     break
 
-    def __login(self, connection: socket):
-        print("Client Connected")
-        while True:
-            try:
-                msg = connection.recv(4096).decode()
-                print(msg)
-                msg = json.loads(msg)
-                action = msg["action"]
-                if action == "dk":
-                    user, result = signup(connection)
-                    if result:
-                        authed_user = User(connection)
-                        authed_user |= user
-                        connection.send(json.dumps({"action": "dk", "result": "succeed"}).encode())
-                        continue
-                    connection.send(json.dumps({"action": "dk", "result": "failed"}).encode())
-                if action == "dn":
-                    user, result = authenticate(msg)
-                    if result:
-                        authed_user = User(connection)
-                        authed_user |= user
-                        self.__lstUser.append(authed_user)
-                        connection.send(json.dumps({"action": "dn", "result": "succeed"} | user).encode())
-                        break
-                    connection.send(json.dumps({"action": "dn", "result": "failed"}).encode())
-            except socket.error as error:
-                if error.errno == errno.ECONNRESET:
-                    print("Client disconnected")
-                    break
-
+    def __event_handler(self):
+        pass
 
 s = Server()
 s.start_server()
