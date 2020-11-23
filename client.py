@@ -20,14 +20,15 @@ class Client:
         result = dict(result="failed")
         while result["result"] != "succeed":
             action = input('Choose what you want')
-            if action == "dn":
+            if action == "login":
                 print("Login")
                 username = input('Enter username --> ')
                 password = input('Enter password --> ')
                 loginJSON = json.dumps({"uuid": username, "pwd":password, "action":action})
                 self.s.send(loginJSON.encode())
                 result = json.loads(self.s.recv(1024).decode())
-                if result["result"] == "succeed":
+                print(result)
+                if result["result"]:
                     print("Succeed")
                     print("user info " + result["name"])
                 else:

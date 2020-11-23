@@ -22,7 +22,8 @@ class Client:
                 loginJSON = json.dumps({"uuid": username, "pwd":password, "action":action})
                 self.s.send(loginJSON.encode())
                 result = json.loads(self.s.recv(1024).decode())
-                if result["result"] == "succeed":
+                print(type(result["result"]))
+                if result["result"]:
                     print("Succeed")
                     print("user info " + result["name"])
                 else:

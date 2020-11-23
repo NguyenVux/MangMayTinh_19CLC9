@@ -11,7 +11,6 @@ class User(dict):
 
 
 def authenticate(user):
-    print(user)
     file = open("testdata.json")
     filejson = json.loads(file.read())
     if user["uuid"] in filejson:
@@ -54,6 +53,8 @@ class Server:
         self.__socketServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__lstUser = list()
         self.__lstSession = dict()
+        self.__dictAction = dict()
+        self.__dictAction["login"] = self.__login
 
     def start_server(self):
         host = socket.gethostbyname(socket.gethostname())
@@ -73,7 +74,8 @@ class Server:
         user = User(connection)
         session_id = gen_id(self.__lstSession, 100)
         self.__lstSession.update({session_id: user})
-        threading.Thread(target = self.__session_loop,args=(session_id,)).start()
+        #connection.send(session_id.encode())
+        threading.Thread(target=self.__session_loop, args=(session_id,)).start()
 
     def __session_loop(self, session_id: str):
         session = self.__lstSession[session_id]
@@ -81,33 +83,31 @@ class Server:
         while True:
             try:
                 msg = session["connection"].recv(4096).decode()
-                print(msg)
-                msg = json.loads(msg)
-                action = msg["action"]
-                if action == "dk":
-                    user, result = signup(session["connection"])
-                    if result:
-                        authed_user = User(session["connection"])
-                        authed_user |= user
-                        session["connection"].send(json.dumps({"action": "dk", "result": "succeed"}).encode())
-                        continue
-                    session["connection"].send(json.dumps({"action": "dk", "result": "failed"}).encode())
-                if action == "dn":
-                    user, result = authenticate(msg)
-                    if result:
-                        authed_user = User(session["connection"])
-                        authed_user |= user
-                        self.__lstUser.append(authed_user)
-                        session["connection"].send(json.dumps({"action": "dn", "result": "succeed"} | user).encode())
-                        break
-                    session["connection"].send(json.dumps({"action": "dn", "result": "failed"}).encode())
+                #msg = json.loads(msg)
+                try:
+                    msg = json.loads(msg)
+                    self.__dictAction[msg["action"]](msg, session_id)
+                except:
+                    continue
+                # self.__event_handler(msg)
+                #session["connection"].send(json.dumps(respone).decode())
             except socket.error as error:
                 if error.errno == errno.ECONNRESET:
+                    self.__lstSession.pop(session_id,None)
                     print("Client disconnected")
                     break
+        print(self.__lstSession.keys())
 
-    def __event_handler(self):
-        pass
+    def __login(self, json_data: dict, session_id):
+        session = self.__lstSession[session_id]
+        if "uuid" and "pwd" in json_data and session:
+            data, result = authenticate(json_data)
+            response = {value for key, value in session.items() if key != "connection"}
+            response |= data
+            response |= {"result": result}
+            session["connection"].send(json.dumps(response).encode())
+
+
 
 s = Server()
 s.start_server()
