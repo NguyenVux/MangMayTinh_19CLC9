@@ -82,9 +82,9 @@ class Server:
                         authed_user = User(connection)
                         authed_user |= user
                         self.__lstUser.append(authed_user)
-                        connection.send(json.dumps({"action": "dn_s", "result": "succeed"}|user).encode())
+                        connection.send(json.dumps({"action": "dn", "result": "succeed"}|user).encode())
                         break
-                    connection.send(json.dumps({"action": "dn_f", "result": "failed"}).encode())
+                    connection.send(json.dumps({"action": "dn", "result": "failed"}).encode())
             except socket.error as error:
                 if error.errno == errno.ECONNRESET:
                     print("Client disconnected")

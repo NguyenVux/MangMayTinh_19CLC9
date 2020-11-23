@@ -2,10 +2,10 @@ import errno
 import threading
 import socket
 import json
-
+import random
 
 class User(dict):
-    def __init__(self, uuid: str, connection: socket):
+    def __init__(self, connection):
         dict.__init__(self)
         self.update({'connection': connection})
 
@@ -42,10 +42,18 @@ class Room:
         self.__lstUser.append(user)
 
 
+def gen_id(exist_lst, max_id):
+    session_id = random.randint(0, max_id)
+    while session_id in exist_lst:
+        session_id = random.randint(0, max_id)
+    return str(session_id)
+
+
 class Server:
     def __init__(self):
         self.__socketServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__lstUser = list()
+        self.__lstSession = dict()
 
     def start_server(self):
         host = socket.gethostbyname(socket.gethostname())
@@ -55,11 +63,48 @@ class Server:
         self.__socketServer.listen(100)
         print('Running on host: ' + str(host))
         print('Running on port: ' + str(port))
-        threading.thread(target=self.__server_loop(), args=()).start()
         while True:
             connection, address = self.__socketServer.accept()
-            authenticate_thread = threading.Thread(target=self.__login, args=(connection,))
-            authenticate_thread.start()
+            self.__init_session(connection)
+            #authenticate_thread = threading.Thread(target=self.__login, args=(connection,))
+            #authenticate_thread.start()
+
+    def __init_session(self, connection: socket):
+        user = User(connection)
+        session_id = gen_id(self.__lstSession, 100)
+        self.__lstSession.update({session_id: user})
+        threading.Thread(target = self.__session_loop,args=(session_id,)).start()
+
+    def __session_loop(self, session_id: str):
+        session = self.__lstSession[session_id]
+        print("Client Connected")
+        while True:
+            try:
+                msg = session["connection"].recv(4096).decode()
+                print(msg)
+                msg = json.loads(msg)
+                action = msg["action"]
+                if action == "dk":
+                    user, result = signup(session["connection"])
+                    if result:
+                        authed_user = User(session["connection"])
+                        authed_user |= user
+                        session["connection"].send(json.dumps({"action": "dk", "result": "succeed"}).encode())
+                        continue
+                    session["connection"].send(json.dumps({"action": "dk", "result": "failed"}).encode())
+                if action == "dn":
+                    user, result = authenticate(msg)
+                    if result:
+                        authed_user = User(session["connection"])
+                        authed_user |= user
+                        self.__lstUser.append(authed_user)
+                        session["connection"].send(json.dumps({"action": "dn", "result": "succeed"} | user).encode())
+                        break
+                    session["connection"].send(json.dumps({"action": "dn", "result": "failed"}).encode())
+            except socket.error as error:
+                if error.errno == errno.ECONNRESET:
+                    print("Client disconnected")
+                    break
 
     def __login(self, connection: socket):
         print("Client Connected")
@@ -72,7 +117,7 @@ class Server:
                 if action == "dk":
                     user, result = signup(connection)
                     if result:
-                        authed_user = User(msg["uuid"], connection)
+                        authed_user = User(connection)
                         authed_user |= user
                         connection.send(json.dumps({"action": "dk", "result": "succeed"}).encode())
                         continue
@@ -84,31 +129,12 @@ class Server:
                         authed_user |= user
                         self.__lstUser.append(authed_user)
                         connection.send(json.dumps({"action": "dn", "result": "succeed"} | user).encode())
-                        connection.setblocking(0)
                         break
                     connection.send(json.dumps({"action": "dn", "result": "failed"}).encode())
             except socket.error as error:
                 if error.errno == errno.ECONNRESET:
                     print("Client disconnected")
                     break
-
-    def __server_loop(self):
-        while True:
-            lst_length = len(self.__lstUser)
-            for i in range(0, lst_length - 1):
-                # print(self.__lstUser[i])
-                user = self.__lstUser[i]
-                try:
-                    msg = user["connection"].recv(4096).decode()
-                except socket.error as error:
-                    if error.errno == errno.EWOULDBLOCK or error.errno == errno.EAGAIN:
-                        continue
-                    if error.errno == errno.ECONNRESET:
-                        print("Client disconnected")
-                        self.__lstUser.pop(i)
-                        break
-
-    # async def event_handling(self,msg: str, connection: socket):
 
 
 s = Server()
