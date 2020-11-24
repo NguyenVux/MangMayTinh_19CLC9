@@ -1,3 +1,4 @@
+import copy
 import errno
 import threading
 import socket
@@ -31,13 +32,19 @@ class Room:
     def __init__(self):
         self.__lstUser = []
 
-    def notify(self, mess: str, user: User) -> None:
+    def notify(self, mess: str, user: dict) -> None:
         print("message by: " + mess)
         for i in self.__lstUser:
             if i is not user:
                 print(i.name)
 
-    def subscribe(self, user: User) -> None:
+    def subscribe(self, user: dict) -> bool:
+        if not(user in self.__lstUser):
+            self.__lstUser.append(user)
+            return True
+        return False
+
+    def unsubscribe(self, user: dict) -> None:
         self.__lstUser.append(user)
 
 
@@ -55,6 +62,8 @@ class Server:
         self.__lstSession = dict()
         self.__dictAction = dict()
         self.__dictAction["login"] = self.__login
+        self.__dictAction["join_room"] = self.__join_room
+        self.__dictRoom = dict()
 
     def start_server(self):
         host = socket.gethostbyname(socket.gethostname())
@@ -67,14 +76,11 @@ class Server:
         while True:
             connection, address = self.__socketServer.accept()
             self.__init_session(connection)
-            #authenticate_thread = threading.Thread(target=self.__login, args=(connection,))
-            #authenticate_thread.start()
 
     def __init_session(self, connection: socket):
         user = User(connection)
         session_id = gen_id(self.__lstSession, 100)
         self.__lstSession.update({session_id: user})
-        #connection.send(session_id.encode())
         threading.Thread(target=self.__session_loop, args=(session_id,)).start()
 
     def __session_loop(self, session_id: str):
@@ -83,31 +89,46 @@ class Server:
         while True:
             try:
                 msg = session["connection"].recv(4096).decode()
-                #msg = json.loads(msg)
                 try:
                     msg = json.loads(msg)
+                    #if msg["session_id"] == session_id:
+                    print(msg)
                     self.__dictAction[msg["action"]](msg, session_id)
                 except:
                     continue
-                # self.__event_handler(msg)
-                #session["connection"].send(json.dumps(respone).decode())
             except socket.error as error:
                 if error.errno == errno.ECONNRESET:
-                    self.__lstSession.pop(session_id,None)
+                    self.__lstSession.pop(session_id, None)
                     print("Client disconnected")
                     break
         print(self.__lstSession.keys())
 
+    def __join_room(self, json_data: dict, session_id):
+        if self.__login_check(session_id):
+            if not (json_data["room"] in self.__dictRoom):
+                self.__dictRoom.update({json_data["room"]: Room()})
+            result = self.__dictRoom["room"].subscribe(self.__lstSession[session_id])
+            self.__lstSession[session_id]["connection"].send(json.dumps({"result": result}).encode())
+            print(self.__dictRoom["room"])
+
     def __login(self, json_data: dict, session_id):
+        if not self.__login_check(session_id):
+            session = self.__lstSession[session_id]
+            if "uuid" in json_data and "pwd" in json_data:
+                data, result = authenticate(json_data)
+                response = dict(action=json_data["action"])
+                response |= data
+                response |= {"result": result}
+                session["connection"].send(json.dumps(response).encode())
+                response.pop("action")
+                response.pop("result")
+                session |= response
+
+    def __login_check(self,session_id):
         session = self.__lstSession[session_id]
-        if "uuid" and "pwd" in json_data and session:
-            data, result = authenticate(json_data)
-            response = {value for key, value in session.items() if key != "connection"}
-            response |= data
-            response |= {"result": result}
-            session["connection"].send(json.dumps(response).encode())
-
-
+        response = session.copy()
+        response.pop("connection")
+        return bool(response)
 
 s = Server()
 s.start_server()

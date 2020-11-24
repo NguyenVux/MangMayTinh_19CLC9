@@ -19,7 +19,7 @@ class Client:
         action = ""
         result = dict(result="failed")
         while result["result"] != "succeed":
-            action = input('Choose what you want')
+            action = input('Choose what you want-> ')
             if action == "login":
                 print("Login")
                 username = input('Enter username --> ')
@@ -31,6 +31,17 @@ class Client:
                 if result["result"]:
                     print("Succeed")
                     print("user info " + result["name"])
+                else:
+                    print("Fail")
+            if action == "join_room":
+                print("room")
+                username = input('room-> ')
+                loginJSON = json.dumps({"room":username, "action":action})
+                self.s.send(loginJSON.encode())
+                result = json.loads(self.s.recv(1024).decode())
+                print(result)
+                if result["result"]:
+                    print("joined")
                 else:
                     print("Fail")
 
