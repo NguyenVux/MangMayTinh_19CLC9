@@ -27,18 +27,23 @@ def signup(user):
     user_data = dict(uuid="123", pwd="321")
     return user_data, True
 
-
 class Room:
     def __init__(self):
         self.__lstUser = []
 
-    def notify(self, mess: str, user: dict) -> None:
+    def notify(self, mess: str, user) -> None:
         print("message by: " + mess)
-        for i in self.__lstUser:
-            if i is not user:
-                print(i.name)
+        if user in self.__lstUser:
+            for i in self.__lstUser:
+                if i is not user:
+                    try:
+                        i["connection"].send(json.dumps({"result": True, "action": "send_msg", "msg": i["name"]+": " + mess}))
+                    except:
+                        continue
+            return
+        user["connection"].send(json.dumps({"result": False, "action": "send_msg"}).encode())
 
-    def subscribe(self, user: dict) -> bool:
+    def subscribe(self, user) -> bool:
         if not(user in self.__lstUser):
             self.__lstUser.append(user)
             return True
@@ -63,6 +68,7 @@ class Server:
         self.__dictAction = dict()
         self.__dictAction["login"] = self.__login
         self.__dictAction["join_room"] = self.__join_room
+        self.__dictAction["send_msg"] = self.__send_msg
         self.__dictRoom = dict()
 
     def start_server(self):
@@ -108,7 +114,7 @@ class Server:
             if not (json_data["room"] in self.__dictRoom):
                 self.__dictRoom.update({json_data["room"]: Room()})
             result = self.__dictRoom["room"].subscribe(self.__lstSession[session_id])
-            self.__lstSession[session_id]["connection"].send(json.dumps({"result": result}).encode())
+            self.__lstSession[session_id]["connection"].send(json.dumps({"result": result, "action": "join_room"}).encode())
             print(self.__dictRoom["room"])
 
     def __login(self, json_data: dict, session_id):
@@ -124,7 +130,12 @@ class Server:
                 response.pop("result")
                 session |= response
 
-    def __login_check(self,session_id):
+    def __send_msg(self, json_data: dict, session_id):
+        if self.__login_check(session_id):
+            session = self.__lstSession[session_id]
+            self.__dictRoom[session["room"]].notify(json_data["msg"], session)
+
+    def __login_check(self, session_id):
         session = self.__lstSession[session_id]
         response = session.copy()
         response.pop("connection")
