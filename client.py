@@ -59,7 +59,7 @@ class Client:
             if action == "send_msg":
                 print("room")
                 username = input('msg-> ')
-                loginJSON = json.dumps({"room": username, "action": action, "session_id": session_id})
+                loginJSON = json.dumps({"msg": username, "action": action, "session_id": session_id})
                 self.s.send(loginJSON.encode())
 
 client = Client()
