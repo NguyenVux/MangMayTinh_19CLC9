@@ -36,10 +36,7 @@ class Room:
         if user in self.__lstUser:
             for i in self.__lstUser:
                 if i is not user:
-                    try:
                         i["connection"].send(json.dumps({"result": True, "action": "send_msg", "msg": i["name"]+": " + mess}))
-                    except:
-                        continue
             return
         user["connection"].send(json.dumps({"result": False, "action": "send_msg"}).encode())
 
@@ -113,9 +110,8 @@ class Server:
         if self.__login_check(session_id):
             if not (json_data["room"] in self.__dictRoom):
                 self.__dictRoom.update({json_data["room"]: Room()})
-            result = self.__dictRoom["room"].subscribe(self.__lstSession[session_id])
+            result = self.__dictRoom[json_data["room"]].subscribe(self.__lstSession[session_id])
             self.__lstSession[session_id]["connection"].send(json.dumps({"result": result, "action": "join_room"}).encode())
-            print(self.__dictRoom["room"])
 
     def __login(self, json_data: dict, session_id):
         if not self.__login_check(session_id):
