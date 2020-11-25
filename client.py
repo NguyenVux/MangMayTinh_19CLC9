@@ -36,14 +36,14 @@ class Client:
                     print("Fail")
 
 
-        if action == "dn" and result["result"]:
+        if action == "login" and result["result"]:
             message_handler = threading.Thread(target=self.handle_messages, args=(session_id,))
             message_handler.start()
 
             input_handler = threading.Thread(target=self.input_handler, args=(session_id,))
             input_handler.start()
 
-    def handle_messages(self):
+    def handle_messages(self,session_id):
         while 1:
             print(self.s.recv(1204).decode())
 
@@ -53,6 +53,12 @@ class Client:
             if action == "join_room":
                 print("room")
                 username = input('room-> ')
+                loginJSON = json.dumps({"room": username, "action": action, "session_id": session_id})
+                self.s.send(loginJSON.encode())
+            action = input("action: ")
+            if action == "send_msg":
+                print("room")
+                username = input('msg-> ')
                 loginJSON = json.dumps({"room": username, "action": action, "session_id": session_id})
                 self.s.send(loginJSON.encode())
 
