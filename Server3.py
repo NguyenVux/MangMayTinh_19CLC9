@@ -84,6 +84,7 @@ class Server:
         user = User(connection)
         session_id = gen_id(self.__lstSession, 100)
         self.__lstSession.update({session_id: user})
+        connection.send(session_id.endcode())
         threading.Thread(target=self.__session_loop, args=(session_id,)).start()
 
     def __session_loop(self, session_id: str):
@@ -94,9 +95,8 @@ class Server:
                 msg = session["connection"].recv(4096).decode()
                 try:
                     msg = json.loads(msg)
-                    #if msg["session_id"] == session_id:
-                    print(msg)
-                    self.__dictAction[msg["action"]](msg, session_id)
+                    if msg["session_id"] == session_id:
+                        self.__dictAction[msg["action"]](msg, session_id)
                 except:
                     continue
             except socket.error as error:
