@@ -36,7 +36,7 @@ class Room:
         if user in self.__lstUser:
             for i in self.__lstUser:
                 if i is not user:
-                    i["connection"].send(json.dumps({"result": True, "action": "send_msg", "msg": i["name"]+": " + mess}).encode())
+                    i["connection"].send(json.dumps({"result": True, "action": "send_msg", "msg": user["name"]+": " + mess}).encode())
             return
         user["connection"].send(json.dumps({"result": False, "action": "send_msg"}).encode())
 
@@ -92,13 +92,10 @@ class Server:
         print("Client Connected")
         while True:
             try:
-                msg = session["connection"].recv(4096).decode()
-                try:
-                    msg = json.loads(msg)
-                    if msg["session_id"] == session_id:
-                        self.__dictAction[msg["action"]](msg, session_id)
-                except:
-                    continue
+                msg = session["connection"].recv(1024).decode()
+                msg = json.loads(msg)
+                if msg["session_id"] == session_id:
+                    self.__dictAction[msg["action"]](msg, session_id)
             except socket.error as error:
                 if error.errno == errno.ECONNRESET:
                     self.__lstSession.pop(session_id, None)
@@ -110,6 +107,8 @@ class Server:
         if self.__login_check(session_id):
             if not (json_data["room"] in self.__dictRoom):
                 self.__dictRoom.update({json_data["room"]: Room()})
+            self.__lstSession[session_id]["room"] = json_data["room"]
+            print(self.__lstSession[session_id])
             result = self.__dictRoom[json_data["room"]].subscribe(self.__lstSession[session_id])
             self.__lstSession[session_id]["connection"].send(json.dumps({"result": result, "action": "join_room"}).encode())
 
@@ -125,11 +124,10 @@ class Server:
                 response.pop("action")
                 response.pop("result")
                 session |= response
-
+                print(session)
     def __send_msg(self, json_data: dict, session_id):
         if self.__login_check(session_id):
             session = self.__lstSession[session_id]
-            print(session["room"])
             self.__dictRoom[session["room"]].notify(json_data["msg"], session)
 
     def __login_check(self, session_id):
