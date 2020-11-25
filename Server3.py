@@ -36,7 +36,7 @@ class Room:
         if user in self.__lstUser:
             for i in self.__lstUser:
                 if i is not user:
-                        i["connection"].send(json.dumps({"result": True, "action": "send_msg", "msg": i["name"]+": " + mess}))
+                    i["connection"].send(json.dumps({"result": True, "action": "send_msg", "msg": i["name"]+": " + mess}).encode())
             return
         user["connection"].send(json.dumps({"result": False, "action": "send_msg"}).encode())
 
@@ -129,6 +129,7 @@ class Server:
     def __send_msg(self, json_data: dict, session_id):
         if self.__login_check(session_id):
             session = self.__lstSession[session_id]
+            print(session["room"])
             self.__dictRoom[session["room"]].notify(json_data["msg"], session)
 
     def __login_check(self, session_id):
