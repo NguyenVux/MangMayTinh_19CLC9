@@ -45,7 +45,10 @@ class Client:
 
     def handle_messages(self,session_id):
         while 1:
-            print(self.s.recv(1204).decode())
+            msg = self.s.recv(1204).decode()
+            msg = json.loads(msg)
+            if msg["action"] == "send_msg":
+                print(msg["msg"])
 
     def input_handler(self, session_id):
         while 1:
