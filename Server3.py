@@ -84,7 +84,7 @@ class Server:
         user = User(connection)
         session_id = gen_id(self.__lstSession, 100)
         self.__lstSession.update({session_id: user})
-        connection.send(session_id.endcode())
+        connection.send(session_id.encode())
         threading.Thread(target=self.__session_loop, args=(session_id,)).start()
 
     def __session_loop(self, session_id: str):
