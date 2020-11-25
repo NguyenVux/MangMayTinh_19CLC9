@@ -33,17 +33,7 @@ class Client:
                     print("user info " + result["name"])
                 else:
                     print("Fail")
-            if action == "join_room":
-                print("room")
-                username = input('room-> ')
-                loginJSON = json.dumps({"room":username, "action":action})
-                self.s.send(loginJSON.encode())
-                result = json.loads(self.s.recv(1024).decode())
-                print(result)
-                if result["result"]:
-                    print("joined")
-                else:
-                    print("Fail")
+
 
         if action == "dn" and result["result"] == "succeed":
             message_handler = threading.Thread(target=self.handle_messages, args=())
@@ -58,6 +48,11 @@ class Client:
 
     def input_handler(self):
         while 1:
-            self.s.send(("["+self.username+"]:"+' - '+input()).encode())
+            action = input("action: ")
+            if action == "join_room":
+                print("room")
+                username = input('room-> ')
+                loginJSON = json.dumps({"room": username, "action": action})
+                self.s.send(loginJSON.encode())
 
 client = Client()
