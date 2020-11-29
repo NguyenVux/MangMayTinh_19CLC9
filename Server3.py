@@ -29,7 +29,7 @@ def signup(user):
 
 class Room:
     def __init__(self):
-        self.__lstUser = []
+        self.__lstUser = set()
 
     def notify(self, mess: str, user) -> None:
         print("message by: " + mess)
@@ -42,12 +42,17 @@ class Room:
 
     def subscribe(self, user) -> bool:
         if not(user in self.__lstUser):
-            self.__lstUser.append(user)
+            self.__lstUser.add(user)
             return True
         return False
 
-    def unsubscribe(self, user: dict) -> None:
-        self.__lstUser.append(user)
+    def unsubscribe(self, user: dict) -> bool:
+        try:
+            self.__lstUser.remove(user)
+            return True
+        except errno as err:
+            print(err)
+            return False
 
 
 def gen_id(exist_lst, max_id):
@@ -65,7 +70,9 @@ class Server:
         self.__dictAction = dict()
         self.__dictAction["login"] = self.__login
         self.__dictAction["join_room"] = self.__join_room
+        self.__dictAction["leave_room"] = self.__leave_room
         self.__dictAction["send_msg"] = self.__send_msg
+
         self.__dictRoom = dict()
 
     def start_server(self):
@@ -125,10 +132,16 @@ class Server:
                 response.pop("result")
                 session |= response
                 print(session)
+
     def __send_msg(self, json_data: dict, session_id):
-        if self.__login_check(session_id):
-            session = self.__lstSession[session_id]
+        session = self.__lstSession[session_id]
+        if self.__login_check(session_id) and session["room"] is str():
             self.__dictRoom[session["room"]].notify(json_data["msg"], session)
+
+    def __leave_room(self, json_data: dict, session_id):
+        session = self.__lstSession[session_id]
+        result = self.__dictRoom[session["room"]].unsubscribe(session)
+        session["connection"].send(json.dumps({"result": result,"action":json_data['action']}).encode())
 
     def __login_check(self, session_id):
         session = self.__lstSession[session_id]
