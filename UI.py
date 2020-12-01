@@ -1,4 +1,7 @@
 import sys
+import socket
+import threading
+import json
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QFont, QPixmap
 from PyQt5.QtGui import QIcon
@@ -28,11 +31,11 @@ class startWindow(QWidget):
 
     def connectUI(self):
         connect_form = QFormLayout()
-        hbox_top=QHBoxLayout()
+        hbox_top = QHBoxLayout()
         hbox_mid = QHBoxLayout()
         hbox_down = QHBoxLayout()
 
-        p=QPixmap('image/cloud-computing.png')
+        p = QPixmap('image/cloud-computing.png')
         image = QLabel()
         image.setPixmap(p)
         hbox_top.addStretch()
@@ -70,7 +73,8 @@ class startWindow(QWidget):
 
         quit_btn.clicked.connect(self.exitApp)
 
-        connect_btn.clicked.connect(lambda: self.connectServer(host_input.text(), port_input.text()))
+        connect_btn.clicked.connect(lambda:
+                                    self.connectServer(host_input.text(), port_input.text()))
         ########Dislay to screen##########
         self.mainLayout.addLayout(connect_form)
         self.setLayout(self.mainLayout)
@@ -86,9 +90,17 @@ class startWindow(QWidget):
             QMessageBox.information(self, "Warning!", "Do not empty!!!!", QMessageBox.Ok, QMessageBox.Ok)
         else:
             ##########connect##########
+            self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-            ##########login###########
-            pass
+            try:
+                port = int(port)
+                self.s.connect((host, port))
+                ##########login###########
+                self.close()
+                self.Login = login()
+            except:
+                QMessageBox.information(self, "Notification", "Couldn't connect to server", QMessageBox.Ok,
+                                        QMessageBox.Ok)
 
 class login(QWidget):
     pass
