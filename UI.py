@@ -2,6 +2,12 @@ import sys
 import socket
 import time
 import threading
+import copy
+import errno
+import threading
+import socket
+import json
+import random
 from threading import Thread
 import json
 from PyQt5.QtWidgets import *
@@ -12,6 +18,20 @@ from PyQt5 import QtCore
 from PyQt5 import QtGui
 
 font = QFont("Arial", 10, 80)
+action = ""
+result = dict(result="failed")
+session_id = None
+
+
+# session_id = self.s.recv(1024).decode()
+
+class Client():
+    username = ''
+    password = ''
+    full_name = ''
+    email = ''
+    dob = ''
+    s = None
 
 
 class startWindow(QWidget):
@@ -102,15 +122,18 @@ class startWindow(QWidget):
         connect_thread.start()
 
     def connectServer(self, host, port):
-        ##########connect##########
+        global session_id
+        global client
+        ########################## connect ################################
         if host == "" or port == "":
             QMessageBox.information(self, "Warning!", "Do not empty!!!!", QMessageBox.Ok, QMessageBox.Ok)
             self.status.setText("")
         else:
             try:
-                self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                client.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 port = int(port)
-                self.s.connect((host, port))
+                client.s.connect((host, port))
+                session_id = client.s.recv(1024).decode()
             except:
                 QMessageBox.information(self, "Notification", "Couldn't connect to server", QMessageBox.Ok,
                                         QMessageBox.Ok)
@@ -130,6 +153,7 @@ class loginWindow(QWidget):
         self.width = 360
         self.height = 100
         self.setWindowTitle(self.title)
+        self.setWindowIcon(QIcon('image/chat.png'))
         self.setGeometry(self.left, self.top, self.width, self.height)
         self.UI()
         self.show()
@@ -138,12 +162,11 @@ class loginWindow(QWidget):
         self.initLayout()
         self.mainDesign()
 
-    def closeEvent(self, a0: QtGui.QCloseEvent) :
-        self.back_start=startWindow()
+    def closeEvent(self, a0: QtGui.QCloseEvent):
+        self.back_start = startWindow()
 
     def initLayout(self):
         self.top_hbox = QHBoxLayout()
-        self.mid_hbox = QHBoxLayout()
         self.bot_hbox = QHBoxLayout()
         self.main_layout = QHBoxLayout()
 
@@ -159,22 +182,22 @@ class loginWindow(QWidget):
 
         username = QLabel('Username')
         username.setFont(font)
-        username_entry = QLineEdit()
-        username_entry.setPlaceholderText('type your username...')
-        form.addRow(username, username_entry)
+        self.username_entry = QLineEdit()
+        self.username_entry.setPlaceholderText('type your username...')
+        form.addRow(username, self.username_entry)
 
         passwrd = QLabel('Password')
         passwrd.setFont(font)
-        passwrd_entry = QLineEdit()
-        passwrd_entry.setEchoMode(QLineEdit.Password)
-        passwrd_entry.setPlaceholderText('type your password...')
-        form.addRow(passwrd, passwrd_entry)
+        self.passwrd_entry = QLineEdit()
+        self.passwrd_entry.setEchoMode(QLineEdit.Password)
+        self.passwrd_entry.setPlaceholderText('type your password...')
+        form.addRow(passwrd, self.passwrd_entry)
 
         btn_login = QPushButton("Login")
         btn_login.clicked.connect(self.login)
 
         btn_registr = QPushButton("Register")
-        # btn_registr.clicked.connect()
+        btn_registr.clicked.connect(self.register)
 
         self.bot_hbox.addStretch()
         self.bot_hbox.addWidget(btn_registr)
@@ -184,11 +207,161 @@ class loginWindow(QWidget):
         self.main_layout.addLayout(form)
 
         self.setLayout(self.main_layout)
+
     def login(self):
-        pass
+        global action
+        global session_id
+        global client
+        global result
+        action = "login"
+        client.username = self.username_entry.text()
+        client.password = self.passwrd_entry.text()
+
+        loginJSON = json.dumps(
+            {"uuid": client.username, "pwd": client.password, "action": action, "session_id": session_id})
+        client.s.send(loginJSON.encode())
+        result = json.loads(client.s.recv(1024).decode())
+        if result["result"]:
+            client.full_name = result["name"]
+            QMessageBox.information(self, "Login successfully!!!!", "Hello, " + client.full_name + " <3",
+                                    QMessageBox.Ok, QMessageBox.Ok)
+            ########go to chat window################
+
+        else:
+            QMessageBox.information(self, "Fail", "username or password is invalid!!!", QMessageBox.Ok, QMessageBox.Ok)
+
+    def register(self):
+        self.hide()
+        self.Register = registerWindow()
+
+
+class registerWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.title = 'Chat Room'
+        self.left = 500
+        self.top = 300
+        self.width = 400
+        self.height = 300
+        self.setWindowTitle(self.title)
+        self.setWindowIcon(QIcon('image/chat.png'))
+        self.setGeometry(self.left, self.top, self.width, self.height)
+        self.UI()
+        self.show()
+
+    def UI(self):
+        self.initLayout()
+        self.mainDesign()
+
+    def closeEvent(self, a0: QtGui.QCloseEvent):
+        self.back_login = loginWindow()
+
+    def initLayout(self):
+        self.top_hbox = QHBoxLayout()
+        self.bot_hbox = QHBoxLayout()
+        self.main_layout = QHBoxLayout()
+
+    def mainDesign(self):
+        self.form = QFormLayout()
+
+        title_window = QLabel()
+        title_window.setText("Register")
+        title_window.setFont(QFont("Arial", 20, 100))
+        self.top_hbox.addStretch()
+        self.top_hbox.addWidget(title_window)
+        self.top_hbox.addStretch()
+        self.form.addRow(self.top_hbox)
+
+        username = QLabel("Username")
+        username.setFont(font)
+        self.username_entry = QLineEdit()
+        self.username_entry.setPlaceholderText('Type your username...')
+        self.form.addRow(username, self.username_entry)
+        self.main_layout.addLayout(self.form)
+
+        passwrd = QLabel("Password")
+        passwrd.setFont(font)
+        self.passwrd_entry = QLineEdit()
+        self.passwrd_entry.setPlaceholderText('Type your password...')
+        self.passwrd_entry.setEchoMode(QLineEdit.Password)
+        self.form.addRow(passwrd, self.passwrd_entry)
+        self.main_layout.addLayout(self.form)
+
+        passwrdConfm = QLabel("Confirm password")
+        passwrdConfm.setFont(font)
+        self.passwrdConfm_entry = QLineEdit()
+        self.passwrdConfm_entry.setPlaceholderText('Type your password again...')
+        self.passwrdConfm_entry.setEchoMode(QLineEdit.Password)
+        self.form.addRow(passwrdConfm, self.passwrdConfm_entry)
+        self.main_layout.addLayout(self.form)
+        self.setLayout(self.main_layout)
+
+        name = QLabel('Name')
+        name.setFont(font)
+        self.name_entry = QLineEdit()
+        self.name_entry.setPlaceholderText('Your fullname...')
+        self.form.addRow(name, self.name_entry)
+
+        email = QLabel('Email')
+        email.setFont(font)
+        self.email_entry = QLineEdit()
+        self.email_entry.setPlaceholderText("example@example.com...")
+        self.form.addRow(email, self.email_entry)
+
+        dob = QLabel('Date of birth')
+        dob.setFont(font)
+        self.dob_entry = QLineEdit()
+        self.dob_entry.setPlaceholderText('day month year...')
+        self.form.addRow(dob, self.dob_entry)
+
+        regis_btn = QPushButton("Register")
+        regis_btn.clicked.connect(self.regisProcessing)
+        self.bot_hbox.addStretch()
+        self.bot_hbox.addWidget(regis_btn)
+        self.form.addRow(self.bot_hbox)
+        self.setLayout(self.main_layout)
+
+    ### Register ##############################################################
+    def regisProcessing(self):
+        global action
+        global session_id
+        global client
+        global result
+        action = "register"
+
+        usernm = self.username_entry.text()
+        pwrd = self.passwrd_entry.text()
+        pwrdCon = self.passwrdConfm_entry.text()
+        fullnm = self.name_entry.text()
+        eml = self.email_entry.text()
+        dob = self.dob_entry.text()
+################## MAIN REGISTER #########################################
+        if usernm == '' or pwrd == '' or pwrdCon == '' or fullnm == '' or eml == '' or dob == '':
+            QMessageBox.information(self, "Warning", 'Do not empty!!!!', QMessageBox.Ok, QMessageBox.Ok)
+        elif pwrd != pwrdCon:
+            QMessageBox.information(self, 'Warning', "Confirm password does not match the password", QMessageBox.Ok,
+                                    QMessageBox.Ok)
+        else:
+            registerJSON = json.dumps({"uuid": usernm, "pwd": pwrd, "action": action,
+                                       "session_id": session_id})
+            client.s.send(registerJSON.encode())
+            if result["result"]:
+                QMessageBox.information(self, "Notification", "Successfull!!!", QMessageBox.Ok, QMessageBox.Ok)
+                dataJSON = json.dumps({"name": fullnm, "dob": dob, "email": eml, "action": action,
+                                       "session_id": session_id})
+                self.s.send(dataJSON.encode())
+                result = json.loads(self.s.recv(1024).decode())
+                ########## back to login window ############
+                
+            else:
+                QMessageBox.information(self, 'Warning', "Username is already exist, please try with other username!",
+                                        QMessageBox.Ok,
+                                        QMessageBox.Ok)
+
 
 ##############start##############
 if __name__ == '__main__':
+    client = Client()
     app = QApplication(sys.argv)
     app.setStyle('fusion')
     window = startWindow()
