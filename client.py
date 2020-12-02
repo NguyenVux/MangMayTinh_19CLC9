@@ -18,7 +18,7 @@ class Client:
         action = ""
         result = dict(result="failed")
         session_id = self.s.recv(1024).decode()
-        while result["result"]:
+        while True:
             action = input('Choose what you want-> ')
             if action == "login":
                 print("Login")
@@ -34,7 +34,24 @@ class Client:
                     break
                 else:
                     print("Fail")
-
+            elif action == "register":
+                print("Register")
+                username = input('Enter username --> ')
+                password = input('Enter password --> ')
+                name = input('Enter Name --> ')
+                dob = input('Enter Date of Birth --> ')
+                email = input('Enter Email --> ')
+                registerJSON = json.dumps({"uuid": username, "pwd": password, "action": action, "session_id": session_id ,
+                                           "name": name, "dob": dob, "email": email})
+                self.s.send(registerJSON.encode())
+                result = json.loads(self.s.recv(1024).decode())
+                print(result)
+                if result["result"]:
+                    print("Succeed")
+                    print("user info " + result["name"])
+                    break
+                else:
+                    print("Fail")
 
         if action == "login" and result["result"]:
             message_handler = threading.Thread(target=self.handle_messages, args=(session_id,))
