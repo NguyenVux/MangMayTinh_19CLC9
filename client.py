@@ -49,7 +49,6 @@ class Client:
             msg = json.loads(msg)
             if msg["action"] == "send_msg":
                 print(msg["msg"])
-            print(msg)
 
     def input_handler(self, session_id):
         while 1:
@@ -59,14 +58,11 @@ class Client:
                 username = input('room-> ')
                 loginJSON = json.dumps({"room": username, "action": action, "session_id": session_id})
                 self.s.send(loginJSON.encode())
+            action = input("action: ")
             if action == "send_msg":
                 print("room")
                 username = input('msg-> ')
                 loginJSON = json.dumps({"msg": username, "action": action, "session_id": session_id})
-                self.s.send(loginJSON.encode())
-            else:
-                print(action)
-                loginJSON = json.dumps({"uuid": "test", "pwd": "123", "action": action, "session_id": session_id})
                 self.s.send(loginJSON.encode())
 
 client = Client()
