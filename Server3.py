@@ -1,9 +1,10 @@
-import copy
+from database import DataBase
 import errno
 import threading
 import socket
 import json
 import random
+
 
 class User(dict):
     def __init__(self, connection):
@@ -11,21 +12,41 @@ class User(dict):
         self.update({'connection': connection})
 
 
-def authenticate(user):
-    file = open("testdata.json")
-    filejson = json.loads(file.read())
-    if user["uuid"] in filejson:
-        user_data = filejson[user["uuid"]]
-        if user_data["pwd"] == user["pwd"]:
-            user_data.pop("pwd", None)
-            return user_data, True
+def authenticate(user, db: DataBase):
+    query = {"uuid": user["uuid"]}
+    result = db.user_db.find(query, {"_id": 0})
+    for r in result:
+        if r["pwd"] == user["pwd"]:
+            r.pop("pwd", None)
+            return r, True
+    # if user["uuid"] in file_json:
+    #     user_data = file_json[user["uuid"]]
+    #     if user_data["pwd"] == user["pwd"]:
+    #         user_data.pop("pwd", None)
+    #         return user_data, True
     return {}, False
 
 
-def signup(user):
-    print(user)
-    user_data = dict(uuid="123", pwd="321")
-    return user_data, True
+def signup(user, db: DataBase):
+    query = {"uuid": user["uuid"]}
+    result = db.user_db.find(query, {"_id": 0})
+    if result.count() == 0 and "uuid" in user and "pwd" in user:
+        data = \
+            {
+                "uuid": user["uuid"],
+                "pwd": user["pwd"],
+                "name": "",
+                "dob": ""
+            }
+        db.user_db.insert_one(data)
+        return data, True
+        # if user["uuid"] in file_json:
+    #     user_data = file_json[user["uuid"]]
+    #     if user_data["pwd"] == user["pwd"]:
+    #         user_data.pop("pwd", None)
+    #         return user_data, True
+    return {"errmsg": "user name is exist or missing request info"}, False
+
 
 class Room:
     def __init__(self):
@@ -36,12 +57,13 @@ class Room:
         if user in self.__lstUser:
             for i in self.__lstUser:
                 if i is not user:
-                    i["connection"].send(json.dumps({"result": True, "action": "send_msg", "msg": user["name"]+": " + mess}).encode())
+                    i["connection"].send(
+                        json.dumps({"result": True, "action": "send_msg", "msg": user["name"] + ": " + mess}).encode())
             return
         user["connection"].send(json.dumps({"result": False, "action": "send_msg"}).encode())
 
     def subscribe(self, user) -> bool:
-        if not(user in self.__lstUser):
+        if not (user in self.__lstUser):
             self.__lstUser.add(user)
             return True
         return False
@@ -63,7 +85,7 @@ def gen_id(exist_lst, max_id):
 
 
 class Server:
-    def __init__(self):
+    def __init__(self, dbObject: DataBase):
         self.__socketServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__lstUser = list()
         self.__lstSession = dict()
@@ -72,6 +94,8 @@ class Server:
         self.__dictAction["join_room"] = self.__join_room
         self.__dictAction["leave_room"] = self.__leave_room
         self.__dictAction["send_msg"] = self.__send_msg
+        self.__dictAction["register"] = self.__register
+        self.__dbObject = dbObject
 
         self.__dictRoom = dict()
 
@@ -108,6 +132,7 @@ class Server:
                     self.__lstSession.pop(session_id, None)
                     print("Client disconnected")
                     break
+        self.__notify_status(session_id)
         print(self.__lstSession.keys())
 
     def __join_room(self, json_data: dict, session_id):
@@ -117,13 +142,14 @@ class Server:
             self.__lstSession[session_id]["room"] = json_data["room"]
             print(self.__lstSession[session_id])
             result = self.__dictRoom[json_data["room"]].subscribe(self.__lstSession[session_id])
-            self.__lstSession[session_id]["connection"].send(json.dumps({"result": result, "action": "join_room"}).encode())
+            self.__lstSession[session_id]["connection"].send(
+                json.dumps({"result": result, "action": "join_room"}).encode())
 
     def __login(self, json_data: dict, session_id):
         if not self.__login_check(session_id):
             session = self.__lstSession[session_id]
             if "uuid" in json_data and "pwd" in json_data:
-                data, result = authenticate(json_data)
+                data, result = authenticate(json_data, self.__dbObject)
                 response = dict(action=json_data["action"])
                 response |= data
                 response |= {"result": result}
@@ -131,6 +157,8 @@ class Server:
                 response.pop("action")
                 response.pop("result")
                 session |= response
+                if result:
+                    self.__notify_status(session_id)
                 print(session)
 
     def __send_msg(self, json_data: dict, session_id):
@@ -141,7 +169,22 @@ class Server:
     def __leave_room(self, json_data: dict, session_id):
         session = self.__lstSession[session_id]
         result = self.__dictRoom[session["room"]].unsubscribe(session)
-        session["connection"].send(json.dumps({"result": result,"action":json_data['action']}).encode())
+        if (result):
+            session["room"] = 0
+        session["connection"].send(json.dumps({"result": result, "action": json_data['action']}).encode())
+
+    def __register(self, json_data: dict, session_id):
+        session = self.__lstSession[session_id]
+        if self.__login_check(session_id):
+            session["connection"].send(json.dumps({"action": json_data["action"],
+                                                   "result": False,
+                                                   "errmsg": "already logged in"
+                                                   }).encode())
+        else:
+            data, result = signup(json_data)
+            data |= {"result": result,
+                     'action': json_data["action"]}
+            session["connection"].send(json.dumps(data).encode())
 
     def __login_check(self, session_id):
         session = self.__lstSession[session_id]
@@ -149,5 +192,19 @@ class Server:
         response.pop("connection")
         return bool(response)
 
-s = Server()
-s.start_server()
+    def __notify_status(self, session_id):
+        data = {"action": "status_notify", "user_list": []}
+        for u in self.__lstSession:
+            if u != session_id:
+                data["user_list"].append(self.__lstSession[u]["name"])
+        for u in self.__lstSession:
+            self.__lstSession[u]["connection"].send(json.dumps(data).encode())
+
+
+
+try:
+    db = DataBase()
+    s = Server(db)
+    s.start_server()
+except errno as err:
+    print(err)
