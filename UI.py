@@ -31,6 +31,8 @@ class Client():
     full_name = ''
     email = ''
     dob = ''
+    port=''
+    host=''
     s = None
 
 
@@ -140,6 +142,8 @@ class startWindow(QWidget):
             else:
                 choice = QMessageBox.information(self, "Notification", "Connected to server", QMessageBox.Ok,
                                                  QMessageBox.Ok)
+                client.host=host
+                client.port=port
                 self.close()
                 self.Login = loginWindow()
 
@@ -191,6 +195,7 @@ class loginWindow(QWidget):
         self.passwrd_entry = QLineEdit()
         self.passwrd_entry.setEchoMode(QLineEdit.Password)
         self.passwrd_entry.setPlaceholderText('type your password...')
+        self.passwrd_entry.returnPressed.connect(self.login)
         form.addRow(passwrd, self.passwrd_entry)
 
         btn_login = QPushButton("Login")
@@ -226,7 +231,8 @@ class loginWindow(QWidget):
             QMessageBox.information(self, "Login successfully!!!!", "Hello, " + client.full_name + " <3",
                                     QMessageBox.Ok, QMessageBox.Ok)
             ########go to chat window################
-
+            self.hide()
+            self.main=mainWindow()
         else:
             QMessageBox.information(self, "Fail", "username or password is invalid!!!", QMessageBox.Ok, QMessageBox.Ok)
 
@@ -357,6 +363,80 @@ class registerWindow(QWidget):
                 QMessageBox.information(self, 'Warning', "Username is already exist, please try with other username!",
                                         QMessageBox.Ok,
                                         QMessageBox.Ok)
+
+class mainWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.title = 'Chat Room'
+        self.left = 500
+        self.top = 300
+        self.width = 600
+        self.height = 600
+        self.setWindowTitle(self.title)
+        self.setWindowIcon(QIcon('image/chat.png'))
+        self.setGeometry(self.left, self.top, self.width, self.height)
+        self.UI()
+        self.show()
+    def UI(self):
+        self.initLayout()
+        self.mainDesign()
+    def initLayout(self):
+        self.main_layout=QHBoxLayout()
+        self.left_layout=QVBoxLayout()
+        self.botLeft_layout=QHBoxLayout()
+        self.right_layout=QVBoxLayout()
+
+    def mainDesign(self):
+        self.chat_print = QListWidget()
+
+        self.chat_entry=QLineEdit()
+        self.chat_entry.setPlaceholderText('Type your message...')
+        self.chat_entry.returnPressed.connect(self.sendMsg)
+
+        self.send_btn=QPushButton("Send")
+        self.send_btn.setIcon(QIcon('Image/mail-send.png'))
+        self.send_btn.clicked.connect(self.sendMsg)
+
+        self.botLeft_layout.addWidget(self.chat_entry)
+        self.botLeft_layout.addWidget(self.send_btn)
+
+        self.left_layout.addWidget(QLabel("[Chat]"))
+        self.left_layout.addWidget(self.chat_print)
+        self.left_layout.addLayout(self.botLeft_layout)
+
+        info_status=QLabel(f"""
+User: {client.username}
+Host: {client.host}
+Port: {client.port}
+        """)
+        info_status.setFont(font)
+
+        listOnline_label=QLabel("Online")
+        self.listOnline=QListWidget()
+        self.listOnline.addItem("all")
+
+        sendFileStatus_label=QLabel("Receiving file status")
+        self.listSendFile_status=QListWidget()
+        self.sendFile_btn=QPushButton("Send file")
+
+        self.right_layout.addWidget(info_status)
+        self.right_layout.addWidget(listOnline_label)
+        self.right_layout.addWidget(self.listOnline)
+        self.right_layout.addWidget(sendFileStatus_label)
+        self.right_layout.addWidget(self.listSendFile_status)
+        self.right_layout.addWidget(self.sendFile_btn)
+
+        self.main_layout.addLayout(self.left_layout)
+        self.main_layout.addLayout(self.right_layout)
+        self.setLayout(self.main_layout)
+
+    def sendMsg(self):
+        global action
+        global session_id
+        me=">>>[me]: "
+        msg=self.chat_entry.text()
+        self.chat_print.addItem(me+msg)
+        self.chat_entry.setText("")
 
 
 ##############start##############
