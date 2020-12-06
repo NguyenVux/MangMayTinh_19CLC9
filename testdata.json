@@ -1,5 +1,5 @@
-{
-  "vu": {"pwd": "123","name": "Nguyen Hoang Vu","room": 0},
-  "thai": {"pwd": "123","name": "tran hoang thai","room": 0},
-  "tuan": {"pwd": "123","name": "tran hoang thai","room": 0}
-}
+[
+  {"uuid": "vu", "pwd": "123","name": "Nguyen Hoang Vu","room": 0},
+  {"uuid": "thai", "pwd": "123","name": "Nguyen Tran Hoang Thai","room": 0},
+  {"uuid": "tuan", "pwd": "123","name": "Nguyen Anh Tuan","room": 0}
+]
