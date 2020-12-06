@@ -79,7 +79,10 @@ class Client:
             msg = json.loads(msg)
             if msg["action"] == "send_msg":
                 print(msg["msg"])
-
+            if msg["action"] == "status_notify":
+                onliner = json.loads(self.s.recv(1024).decode())
+                for user in onliner:
+                    print(user)
     def input_handler(self, session_id):
         while 1:
             action = input("action: ")
@@ -105,6 +108,10 @@ class Client:
                 username = input('room-> ')
                 loginJSON = json.dumps({"room": username, "action": action, "session_id": session_id})
                 self.s.send(loginJSON.encode())
+# Status Notify-----------------------------------------------------------------
+            if action == "status_notify":
+                statusJSON = json.dumps({"action": action, "session_id": session_id})
+                self.s.send(statusJSON.encode())
 # Send Mess-----------------------------------------------------------------
             if action == "send_msg":
                 print("room")
