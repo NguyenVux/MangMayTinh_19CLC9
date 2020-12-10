@@ -3,6 +3,7 @@ import threading
 import json
 import os
 import tqdm
+
 SEPARATOR = "<SEPARATOR>"
 BUFFER_SIZE = 4096
 
@@ -27,7 +28,7 @@ class Client:
         session_id = self.s.recv(1024).decode()
         while True:
             action = input('Choose what you want-> ')
-# login----------------------------------------------------------
+            # login----------------------------------------------------------
             if action == "login":
                 print("Login")
                 username = input('Enter username --> ')
@@ -42,7 +43,7 @@ class Client:
                     break
                 else:
                     print("Fail")
-# register----------------------------------------------------------
+            # register----------------------------------------------------------
             elif action == "register":
                 print("Register")
                 username = input('Enter username --> ')
@@ -64,8 +65,6 @@ class Client:
                 else:
                     print("Fail")
 
-
-
         if action == "login" and result["result"]:
             message_handler = threading.Thread(target=self.handle_messages, args=(session_id,))
             message_handler.start()
@@ -73,23 +72,23 @@ class Client:
             input_handler = threading.Thread(target=self.input_handler, args=(session_id,))
             input_handler.start()
 
-    def handle_messages(self,session_id):
+    def handle_messages(self, session_id):
         while 1:
             msg = self.s.recv(1204).decode()
             msg = json.loads(msg)
-            if msg["action"] == "send_msg":
-                print(msg["msg"])
             if msg["action"] == "status_notify":
-                onliner = json.loads(self.s.recv(1024).decode())
-                for user in onliner:
-                    print(user)
+                for i in msg["user_list"]:
+                    print(i + " is online.\n")
+            if msg["action"] == "send_msg":
+                print(msg["sender"] + ":\t" + msg["msg"])
+
     def input_handler(self, session_id):
         while 1:
             action = input("action: ")
-# Stop Program-------------------------------------------------------------
+            # Stop Program-------------------------------------------------------------
             if action == "out":
                 return
-# Change Password----------------------------------------------------------
+            # Change Password----------------------------------------------------------
             if action == "change_pwd":
                 print("Old Pwd")
                 old_pwd = input('msg-> ')
@@ -102,24 +101,24 @@ class Client:
                 self.s.send(changeJSON.encode())
                 result = json.loads(self.s.recv(1024).decode())
                 print(result)
-# Join Room-----------------------------------------------------------------
+            # Join Room-----------------------------------------------------------------
             if action == "join_room":
                 print("room")
                 username = input('room-> ')
                 loginJSON = json.dumps({"room": username, "action": action, "session_id": session_id})
                 self.s.send(loginJSON.encode())
-# Status Notify-----------------------------------------------------------------
-            if action == "status_notify":
-                statusJSON = json.dumps({"action": action, "session_id": session_id})
-                self.s.send(statusJSON.encode())
-# Send Mess-----------------------------------------------------------------
+            # Status Notify-----------------------------------------------------------------
+
+            # Send Mess-----------------------------------------------------------------
             if action == "send_msg":
                 print("room")
                 username = input('msg-> ')
                 loginJSON = json.dumps({"msg": username, "action": action, "session_id": session_id})
                 self.s.send(loginJSON.encode())
+
+
 # Send File-----------------------------------------------------------------
-            # https://www.thepythoncode.com/article/send-receive-files-using-sockets-python <check this>
+# https://www.thepythoncode.com/article/send-receive-files-using-sockets-python <check this>
 
 
 client = Client()

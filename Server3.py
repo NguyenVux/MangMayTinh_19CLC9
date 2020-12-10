@@ -92,7 +92,7 @@ class Server:
         self.__dictAction = dict()
         self.__dictAction["login"] = self.__login
         self.__dictAction["join_room"] = self.__join_room
-        self.__dictAction["leave_room"] = self.__leave_room
+        #self.__dictAction["leave_room"] = self.__leave_room
         self.__dictAction["send_msg"] = self.__send_msg
         self.__dictAction["register"] = self.__register
         self.__dbObject = dbObject
@@ -163,15 +163,23 @@ class Server:
 
     def __send_msg(self, json_data: dict, session_id):
         session = self.__lstSession[session_id]
-        if self.__login_check(session_id) and session["room"] is str():
-            self.__dictRoom[session["room"]].notify(json_data["msg"], session)
+        if self.__login_check(session_id):
+            # self.__dictRoom[session["room"]].notify(json_data["msg"], session)
+            print("message by [" + session["name"] + "]" + "\n" + json_data["msg"])
+            for i in self.__lstSession:
+                self.__lstSession[i]["connection"].send(
+                    json.dumps(
+                        {"result": True, "action": "send_msg",
+                         "msg":json_data["msg"],
+                         "sender": session["name"]
+                         }).encode())
 
-    def __leave_room(self, json_data: dict, session_id):
-        session = self.__lstSession[session_id]
-        result = self.__dictRoom[session["room"]].unsubscribe(session)
-        if (result):
-            session["room"] = 0
-        session["connection"].send(json.dumps({"result": result, "action": json_data['action']}).encode())
+    # def __leave_room(self, json_data: dict, session_id):
+    #     session = self.__lstSession[session_id]
+    #     result = self.__dictRoom[session["room"]].unsubscribe(session)
+    #     if (result):
+    #         session["room"] = 0
+    #     session["connection"].send(json.dumps({"result": result, "action": json_data['action']}).encode())
 
     def __register(self, json_data: dict, session_id):
         session = self.__lstSession[session_id]
@@ -195,11 +203,11 @@ class Server:
     def __notify_status(self, session_id):
         data = {"action": "status_notify", "user_list": []}
         for u in self.__lstSession:
-            if u != session_id:
-                data["user_list"].append(self.__lstSession[u]["name"])
+            data["user_list"].append(self.__lstSession[u]["name"])
         for u in self.__lstSession:
+            data["user_list"].remove(self.__lstSession[u]["name"])
             self.__lstSession[u]["connection"].send(json.dumps(data).encode())
-
+            data["user_list"].append(self.__lstSession[u]["name"])
 
 
 try:
