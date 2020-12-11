@@ -39,42 +39,7 @@ def signup(user, db: DataBase):
                 "dob": ""
             }
         db.user_db.insert_one(data)
-        return data, True
-        # if user["uuid"] in file_json:
-    #     user_data = file_json[user["uuid"]]
-    #     if user_data["pwd"] == user["pwd"]:
-    #         user_data.pop("pwd", None)
-    #         return user_data, True
     return {"errmsg": "user name is exist or missing request info"}, False
-
-
-class Room:
-    def __init__(self):
-        self.__lstUser = set()
-
-    def notify(self, mess: str, user) -> None:
-        print("message by: " + mess)
-        if user in self.__lstUser:
-            for i in self.__lstUser:
-                if i is not user:
-                    i["connection"].send(
-                        json.dumps({"result": True, "action": "send_msg", "msg": user["name"] + ": " + mess}).encode())
-            return
-        user["connection"].send(json.dumps({"result": False, "action": "send_msg"}).encode())
-
-    def subscribe(self, user) -> bool:
-        if not (user in self.__lstUser):
-            self.__lstUser.add(user)
-            return True
-        return False
-
-    def unsubscribe(self, user: dict) -> bool:
-        try:
-            self.__lstUser.remove(user)
-            return True
-        except errno as err:
-            print(err)
-            return False
 
 
 def gen_id(exist_lst, max_id):
@@ -92,7 +57,6 @@ class Server:
         self.__dictAction = dict()
         self.__dictAction["login"] = self.__login
         self.__dictAction["join_room"] = self.__join_room
-        #self.__dictAction["leave_room"] = self.__leave_room
         self.__dictAction["send_msg"] = self.__send_msg
         self.__dictAction["register"] = self.__register
         self.__dbObject = dbObject
@@ -135,16 +99,6 @@ class Server:
         self.__notify_status(session_id)
         print(self.__lstSession.keys())
 
-    def __join_room(self, json_data: dict, session_id):
-        if self.__login_check(session_id):
-            if not (json_data["room"] in self.__dictRoom):
-                self.__dictRoom.update({json_data["room"]: Room()})
-            self.__lstSession[session_id]["room"] = json_data["room"]
-            print(self.__lstSession[session_id])
-            result = self.__dictRoom[json_data["room"]].subscribe(self.__lstSession[session_id])
-            self.__lstSession[session_id]["connection"].send(
-                json.dumps({"result": result, "action": "join_room"}).encode())
-
     def __login(self, json_data: dict, session_id):
         if not self.__login_check(session_id):
             session = self.__lstSession[session_id]
@@ -164,7 +118,6 @@ class Server:
     def __send_msg(self, json_data: dict, session_id):
         session = self.__lstSession[session_id]
         if self.__login_check(session_id):
-            # self.__dictRoom[session["room"]].notify(json_data["msg"], session)
             print("message by [" + session["name"] + "]" + "\n" + json_data["msg"])
             for i in self.__lstSession:
                 self.__lstSession[i]["connection"].send(
@@ -173,13 +126,6 @@ class Server:
                          "msg":json_data["msg"],
                          "sender": session["name"]
                          }).encode())
-
-    # def __leave_room(self, json_data: dict, session_id):
-    #     session = self.__lstSession[session_id]
-    #     result = self.__dictRoom[session["room"]].unsubscribe(session)
-    #     if (result):
-    #         session["room"] = 0
-    #     session["connection"].send(json.dumps({"result": result, "action": json_data['action']}).encode())
 
     def __register(self, json_data: dict, session_id):
         session = self.__lstSession[session_id]
