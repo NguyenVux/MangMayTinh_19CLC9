@@ -366,6 +366,7 @@ class registerWindow(QWidget):
 
 class mainWindow(QWidget):
     def __init__(self):
+        global session_id
         super().__init__()
         self.title = 'Chat Room'
         self.left = 500
@@ -376,10 +377,14 @@ class mainWindow(QWidget):
         self.setWindowIcon(QIcon('image/chat.png'))
         self.setGeometry(self.left, self.top, self.width, self.height)
         self.UI()
-        self.show()
+
+        message_handler = threading.Thread(target=self.handle_messages).start()
+
+
     def UI(self):
         self.initLayout()
         self.mainDesign()
+        self.show()
     def initLayout(self):
         self.main_layout=QHBoxLayout()
         self.left_layout=QVBoxLayout()
@@ -387,15 +392,16 @@ class mainWindow(QWidget):
         self.right_layout=QVBoxLayout()
 
     def mainDesign(self):
-        self.chat_print = QListWidget()
+        self.chat_print = QTextEdit()
+        self.chat_print.setFocusPolicy(Qt.NoFocus)
 
         self.chat_entry=QLineEdit()
         self.chat_entry.setPlaceholderText('Type your message...')
-        self.chat_entry.returnPressed.connect(self.sendMsg)
+        self.chat_entry.returnPressed.connect(lambda: self.input_handler(self.send_btn))
 
         self.send_btn=QPushButton("Send")
         self.send_btn.setIcon(QIcon('Image/mail-send.png'))
-        self.send_btn.clicked.connect(self.sendMsg)
+        self.send_btn.clicked.connect(lambda: self.input_handler(self.send_btn))
 
         self.botLeft_layout.addWidget(self.chat_entry)
         self.botLeft_layout.addWidget(self.send_btn)
@@ -430,13 +436,60 @@ Port: {client.port}
         self.main_layout.addLayout(self.right_layout)
         self.setLayout(self.main_layout)
 
-    def sendMsg(self):
-        global action
+    # def sendMsg(self, text):
+    #     global action
+    #     global session_id
+    #     me=">>>[me]: "
+    #     msg=self.chat_entry.text()
+    #     self.chat_print.addItem(text)
+    #     self.chat_entry.setText("")
+
+    def handle_messages(self):
+        global client
         global session_id
-        me=">>>[me]: "
-        msg=self.chat_entry.text()
-        self.chat_print.addItem(me+msg)
-        self.chat_entry.setText("")
+        while 1:
+            msg = client.s.recv(1204).decode()
+            msg = json.loads(msg)
+            if msg["action"] == "status_notify":
+                self.listOnline.clear()
+                self.listOnline.addItem("all")
+                for i in msg["user_list"]:
+                    self.listOnline.addItem(i)
+            if msg["action"] == "send_msg":
+               self.chat_print.append('['+msg["sender"]+ "]:  " + msg["msg"])
+
+    def input_handler(self, btn):
+        global session_id
+        global client
+        if not btn:
+           return
+        action=btn.text()
+        # Stop Program-------------------------------------------------------------
+        if action == "Exit":
+            return
+        # Change Password----------------------------------------------------------
+        if action == "Change Password":
+            print("Old Pwd")
+            old_pwd = input('msg-> ')
+            print("New Pwd")
+            new_pwd = input('msg-> ')
+            print("New Pwd Again")
+            new_pwd_2 = input('msg-> ')
+            changeJSON = json.dumps({"old_pwd": old_pwd, "new_pwd": new_pwd, "new_pwd_2": new_pwd_2,
+                                     "action": action, "session_id": session_id})
+            client.s.send(changeJSON.encode())
+            result = json.loads(client.s.recv(1024).decode())
+            print(result)
+        # Status Notify-----------------------------------------------------------------
+
+        # Send Mess-----------------------------------------------------------------
+        if action == "Send":
+            username = self.chat_entry.text()
+            if not username:
+                return
+            self.chat_entry.setText('')
+            loginJSON = json.dumps({"msg": username, "action": "send_msg", "session_id": session_id})
+            client.s.send(loginJSON.encode())
 
 
 ##############start##############

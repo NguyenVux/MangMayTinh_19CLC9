@@ -56,7 +56,6 @@ class Server:
         self.__lstSession = dict()
         self.__dictAction = dict()
         self.__dictAction["login"] = self.__login
-        self.__dictAction["join_room"] = self.__join_room
         self.__dictAction["send_msg"] = self.__send_msg
         self.__dictAction["register"] = self.__register
         self.__dbObject = dbObject
@@ -160,5 +159,5 @@ try:
     db = DataBase()
     s = Server(db)
     s.start_server()
-except errno as err:
+except socket.error as err:
     print(err)
