@@ -6,19 +6,27 @@ import json
 
 
 class FTPServer:
-    timeout_seconds = 3000
+    timeout_seconds = 180
 
     def __init__(self, port):
         self.FTP_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         host = socket.gethostbyname(socket.gethostname())
         self.FTP_socket.bind((host, port))
+        print("Starting FTP Server")
         print('Running on host: ' + str(host))
         print('Running on port: ' + str(port))
+        print('')
         self.FTP_socket.listen(100)
-        #self.FTP_socket.settimeout(self.timeout_seconds)
+        self.FTP_socket.settimeout(self.timeout_seconds)
+        threading.Thread(target=self.__listen_connection, args=()).start()
+
+    def __listen_connection(self):
         while True:
-            connection, address = self.FTP_socket.accept()
-            threading.Thread(target=self.__handle_connection, args=(connection,)).start()
+            try:
+                connection, address = self.FTP_socket.accept()
+                threading.Thread(target=self.__handle_connection, args=(connection,)).start()
+            except:
+                pass
 
     @staticmethod
     def __handle_connection(connection):
