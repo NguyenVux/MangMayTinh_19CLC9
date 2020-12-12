@@ -29,7 +29,7 @@ def send(file_name, root, client: socket):
     header.file_name = file_name
     header.length = 0
     path = root + "/" + file_name
-    print(path)
+    print(header.to_dict())
     if os.path.exists(path):
         header.length = os.stat(path).st_size
         client.send(header.to_json_str().encode())
@@ -37,30 +37,22 @@ def send(file_name, root, client: socket):
         sent = 0
         while sent < header.length:
             data = f.read(4096)
-            print(data.hex())
             client.send(data)
             sent += len(data)
+    else:
+        client.send(header.to_json_str().encode())
 
 
-def get(json_data, root, client: socket):
+def get(header, root, client: socket):
     received = 0
-    file = open(root + '/' + json_data["file_name"], "wb")
-    while received < json_data["length"]:
+    print(header)
+    file = open(root + '/' + header["file_name"], "wb")
+    while received < header["length"]:
         data = client.recv(4096)
-        if len(data) > json_data["length"]:
-            data = data[0:json_data["length"]]
+        if len(data) > header["length"]:
+            data = data[0:header["length"]]
         received += len(data)
         file.write(data)
 
 
 
-if __name__ == '__main__':
-    h = Header()
-    h.action = GET
-    h.length = 100
-    h.file_name = "UI.py"
-    path = "download/test.txt"
-    h.length = os.stat(path).st_size
-    print(h.to_json_str())
-    #send(h.file_name)
-    # print(os.path)

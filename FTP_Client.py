@@ -27,7 +27,7 @@ class FTPClient:
         data = data.decode()
         print(data)
         data = json.loads(data)
-        FTP_core.get(data,"download",self.s)
+        FTP_core.get(data, "download",self.s)
         self.s.recv(1)
         print("Finish recv")
 
@@ -40,4 +40,6 @@ class FTPClient:
 
 if __name__ == '__main__':
     t = FTPClient("h")
-    t.get_file("r.rar")
+    t.get_file("readme.txt")
+    t = FTPClient("h")
+    t.send_file("r.rar")

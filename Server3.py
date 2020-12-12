@@ -4,7 +4,7 @@ import threading
 import socket
 import json
 import random
-
+import FTP_Server
 
 class User(dict):
     def __init__(self, connection):
@@ -50,25 +50,26 @@ def gen_id(exist_lst, max_id):
 
 
 class Server:
-    def __init__(self, dbObject: DataBase):
+    def __init__(self, db_object: DataBase):
+        self.ftp_server = object
         self.__socketServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.__lstUser = list()
         self.__lstSession = dict()
         self.__dictAction = dict()
         self.__dictAction["login"] = self.__login
-        self.__dictAction["join_room"] = self.__join_room
         self.__dictAction["send_msg"] = self.__send_msg
         self.__dictAction["register"] = self.__register
-        self.__dbObject = dbObject
+        self.__dbObject = db_object
 
         self.__dictRoom = dict()
 
     def start_server(self):
         host = socket.gethostbyname(socket.gethostname())
-        port = int(input('Enter port to run the server on --> '))
-
+        port = 5000 #int(input('Enter port to run the server on --> '))
+        self.ftp_server = FTP_Server.FTPServer(port +1)
         self.__socketServer.bind((host, port))
         self.__socketServer.listen(100)
+        print('Starting MSG server:')
         print('Running on host: ' + str(host))
         print('Running on port: ' + str(port))
         while True:
@@ -160,5 +161,5 @@ try:
     db = DataBase()
     s = Server(db)
     s.start_server()
-except errno as err:
+except socket.error as err:
     print(err)
