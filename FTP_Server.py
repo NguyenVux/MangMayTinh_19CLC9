@@ -35,7 +35,8 @@ class FTPServer:
             while b"\r\n\r\n" not in data:
                 data += connection.recv(1)
             data = data.decode()
-            data = json.loads(data)
+            if data != "":
+                data = json.loads(data)
             if data['action'] == FTP_core.GET:
                 FTP_core.send(data["file_name"], "upload", connection)
             if data['action'] == FTP_core.SEND:
@@ -45,7 +46,6 @@ class FTPServer:
         except socket.error as err:
             if err.errno == errno.ECONNRESET:
                 print("Client disconnected")
-
 
 
 if __name__ == '__main__':

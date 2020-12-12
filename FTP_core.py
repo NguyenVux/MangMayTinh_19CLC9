@@ -3,7 +3,6 @@ import threading
 import errno
 import json
 import os
-import tqdm
 
 SEND = "send"
 GET = "get"

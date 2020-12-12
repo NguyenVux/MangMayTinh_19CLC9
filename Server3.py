@@ -89,9 +89,10 @@ class Server:
         while True:
             try:
                 msg = session["connection"].recv(1024).decode()
-                msg = json.loads(msg)
-                if msg["session_id"] == session_id:
-                    self.__dictAction[msg["action"]](msg, session_id)
+                if msg[0] == "{" and msg[-1] == "}":
+                    msg = json.loads(msg)
+                    if msg["session_id"] == session_id:
+                        self.__dictAction[msg["action"]](msg, session_id)
             except socket.error as error:
                 if error.errno == errno.ECONNRESET:
                     self.__lstSession.pop(session_id, None)
@@ -120,13 +121,24 @@ class Server:
         session = self.__lstSession[session_id]
         if self.__login_check(session_id):
             print("message by [" + session["name"] + "]" + "\n" + json_data["msg"])
-            for i in self.__lstSession:
-                self.__lstSession[i]["connection"].send(
-                    json.dumps(
-                        {"result": True, "action": "send_msg",
-                         "msg":json_data["msg"],
-                         "sender": session["name"]
-                         }).encode())
+            print(json_data)
+            if not json_data["private_list"]:
+                for i in self.__lstSession:
+                    self.__lstSession[i]["connection"].send(
+                        json.dumps(
+                            {"result": True, "action": "send_msg",
+                             "msg":json_data["msg"],
+                             "sender": session["name"]
+                             }).encode())
+            else:
+                for i in self.__lstSession:
+                    if self.__lstSession[i]["uuid"] in json_data["private_list"]:
+                        self.__lstSession[i]["connection"].send(
+                            json.dumps(
+                                {"result": True, "action": "send_msg",
+                                 "msg":json_data["msg"],
+                                 "sender": session["name"]
+                                 }).encode())
 
     def __register(self, json_data: dict, session_id):
         session = self.__lstSession[session_id]
@@ -148,13 +160,16 @@ class Server:
         return bool(response)
 
     def __notify_status(self, session_id):
+        key = "uuid"
         data = {"action": "status_notify", "user_list": []}
         for u in self.__lstSession:
-            data["user_list"].append(self.__lstSession[u]["name"])
+            if "name" in self.__lstSession[u]:
+                data["user_list"].append(self.__lstSession[u][key])
         for u in self.__lstSession:
-            data["user_list"].remove(self.__lstSession[u]["name"])
-            self.__lstSession[u]["connection"].send(json.dumps(data).encode())
-            data["user_list"].append(self.__lstSession[u]["name"])
+            if "name" in self.__lstSession[u]:
+                data["user_list"].remove(self.__lstSession[u][key])
+                self.__lstSession[u]["connection"].send(json.dumps(data).encode())
+                data["user_list"].append(self.__lstSession[u][key])
 
 
 try:
