@@ -6,6 +6,7 @@ import copy
 import errno
 import threading
 import socket
+import os
 import json
 import random
 from threading import Thread
@@ -21,6 +22,7 @@ font = QFont("Arial", 10, 80)
 action = ""
 result = dict(result="failed")
 session_id = None
+flag = False
 
 
 # session_id = self.s.recv(1024).decode()
@@ -31,8 +33,8 @@ class Client():
     full_name = ''
     email = ''
     dob = ''
-    port=''
-    host=''
+    port = ''
+    host = ''
     s = None
 
 
@@ -117,7 +119,7 @@ class startWindow(QWidget):
         notify = QMessageBox.information(self, "Notification", "Are you want to exit?",
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if notify == QMessageBox.Yes:
-            sys.exit()
+            os._exit(0)
 
     def connectServerUI(self, host, port):
         connect_thread = Thread(target=self.connectServer(host, port))
@@ -142,8 +144,8 @@ class startWindow(QWidget):
             else:
                 choice = QMessageBox.information(self, "Notification", "Connected to server", QMessageBox.Ok,
                                                  QMessageBox.Ok)
-                client.host=host
-                client.port=port
+                client.host = host
+                client.port = port
                 self.close()
                 self.Login = loginWindow()
 
@@ -232,7 +234,7 @@ class loginWindow(QWidget):
                                     QMessageBox.Ok, QMessageBox.Ok)
             ########go to chat window################
             self.hide()
-            self.main=mainWindow()
+            self.main = mainWindow()
         else:
             QMessageBox.information(self, "Fail", "username or password is invalid!!!", QMessageBox.Ok, QMessageBox.Ok)
 
@@ -341,7 +343,7 @@ class registerWindow(QWidget):
         fullnm = self.name_entry.text()
         eml = self.email_entry.text()
         dob = self.dob_entry.text()
-################## MAIN REGISTER #########################################
+        ################## MAIN REGISTER #########################################
         if usernm == '' or pwrd == '' or pwrdCon == '' or fullnm == '' or eml == '' or dob == '':
             QMessageBox.information(self, "Warning", 'Do not empty!!!!', QMessageBox.Ok, QMessageBox.Ok)
         elif pwrd != pwrdCon:
@@ -365,6 +367,7 @@ class registerWindow(QWidget):
                                         QMessageBox.Ok,
                                         QMessageBox.Ok)
 
+
 class mainWindow(QWidget):
     def __init__(self):
         global session_id
@@ -379,28 +382,45 @@ class mainWindow(QWidget):
         self.setGeometry(self.left, self.top, self.width, self.height)
         self.UI()
 
-        message_handler = threading.Thread(target=self.handle_messages).start()
-
+        self.message_handler = threading.Thread(target=self.handle_messages).start()
 
     def UI(self):
         self.initLayout()
         self.mainDesign()
         self.show()
+
     def initLayout(self):
-        self.main_layout=QHBoxLayout()
-        self.left_layout=QVBoxLayout()
-        self.botLeft_layout=QHBoxLayout()
-        self.right_layout=QVBoxLayout()
+        self.main_layout = QHBoxLayout()
+        self.left_layout = QVBoxLayout()
+        self.botLeft_layout = QHBoxLayout()
+        self.right_layout = QVBoxLayout()
 
     def mainDesign(self):
+        ################ MENU BAR #############################
+        self.bar = QMenuBar()
+        file_menu = self.bar.addMenu("File")
+
+        my_profile = QAction("My profile", self)
+        file_menu.addAction(my_profile)
+        change_pwd = QAction("Change password", self)
+        file_menu.addAction(change_pwd)
+
+        change_pwd.triggered.connect(lambda: self.input_handler(change_pwd))
+
+        exit = QAction("Exit", self)
+        exit.setShortcut("ctrl+q")
+        file_menu.addAction(exit)
+        self.main_layout.addWidget(self.bar)
+
+        ################### LAYOUT CHAT #######################
         self.chat_print = QTextEdit()
         self.chat_print.setFocusPolicy(Qt.NoFocus)
 
-        self.chat_entry=QLineEdit()
+        self.chat_entry = QLineEdit()
         self.chat_entry.setPlaceholderText('Type your message...')
         self.chat_entry.returnPressed.connect(lambda: self.input_handler(self.send_btn))
 
-        self.send_btn=QPushButton("Send")
+        self.send_btn = QPushButton("Send")
         self.send_btn.setIcon(QIcon('Image/mail-send.png'))
         self.send_btn.clicked.connect(lambda: self.input_handler(self.send_btn))
 
@@ -411,20 +431,20 @@ class mainWindow(QWidget):
         self.left_layout.addWidget(self.chat_print)
         self.left_layout.addLayout(self.botLeft_layout)
 
-        info_status=QLabel(f"""
+        info_status = QLabel(f"""
 User: {client.username}
 Host: {client.host}
 Port: {client.port}
         """)
         info_status.setFont(font)
 
-        listOnline_label=QLabel("Online")
-        self.listOnline=QListWidget()
+        listOnline_label = QLabel("Online")
+        self.listOnline = QListWidget()
         self.listOnline.addItem("all")
 
-        sendFileStatus_label=QLabel("Receiving file status")
-        self.listSendFile_status=QListWidget()
-        self.sendFile_btn=QPushButton("Send file")
+        sendFileStatus_label = QLabel("Receiving file status")
+        self.listSendFile_status = QListWidget()
+        self.sendFile_btn = QPushButton("Send file")
 
         self.right_layout.addWidget(info_status)
         self.right_layout.addWidget(listOnline_label)
@@ -446,9 +466,10 @@ Port: {client.port}
     #     self.chat_entry.setText("")
 
     def handle_messages(self):
+        global flag
         global client
         global session_id
-        while 1:
+        while not flag:
             msg = client.s.recv(1204).decode()
             msg = json.loads(msg)
             if msg["action"] == "status_notify":
@@ -457,27 +478,36 @@ Port: {client.port}
                 for i in msg["user_list"]:
                     self.listOnline.addItem(i)
             if msg["action"] == "send_msg":
-               self.chat_print.append('['+msg["sender"]+ "]:  " + msg["msg"])
+                if msg["sender"]==client.full_name:
+                    self.chat_print.append( msg["msg"])
+                    self.chat_print.setAlignment(Qt.AlignRight)
+                else:
+                    self.chat_print.append('[' + msg["sender"] + "]:  " + msg["msg"])
+                    self.chat_print.setAlignment(Qt.AlignLeft)
 
     def input_handler(self, btn):
         global session_id
         global client
         if not btn:
-           return
-        action=btn.text()
+            return
+        action = btn.text()
         # Stop Program-------------------------------------------------------------
         if action == "Exit":
             return
         # Change Password----------------------------------------------------------
-        if action == "Change Password":
+        if action == "Change password":
             print("Old Pwd")
             old_pwd = input('msg-> ')
             print("New Pwd")
             new_pwd = input('msg-> ')
             print("New Pwd Again")
             new_pwd_2 = input('msg-> ')
-            changeJSON = json.dumps({"old_pwd": old_pwd, "new_pwd": new_pwd, "new_pwd_2": new_pwd_2,
-                                     "action": action, "session_id": session_id})
+            if not new_pwd == new_pwd_2:
+                QMessageBox.information(self, "Notification", "new password doesn't match confirm password",
+                                        QMessageBox.Ok, QMessageBox.Ok)
+            else:
+                changeJSON = json.dumps({"pwd": old_pwd, "new_pwd": new_pwd,
+                                     "action": "change_pwd", "session_id": session_id})
             client.s.send(changeJSON.encode())
             result = json.loads(client.s.recv(1024).decode())
             print(result)
@@ -489,7 +519,8 @@ Port: {client.port}
             if not username:
                 return
             self.chat_entry.setText('')
-            loginJSON = json.dumps({"msg": username, "action": "send_msg", "session_id": session_id, "private_list": []})
+            loginJSON = json.dumps(
+                {"msg": username, "action": "send_msg", "session_id": session_id, "private_list": []})
             client.s.send(loginJSON.encode())
 
 
@@ -499,4 +530,4 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     app.setStyle('fusion')
     window = startWindow()
-    sys.exit(app.exec_())
+    os._exit(app.exec_())
