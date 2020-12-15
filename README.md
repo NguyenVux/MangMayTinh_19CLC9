@@ -16,5 +16,7 @@
 | Week    |     Task        |
 | :-----: | :-------------------:|
 | 1       | Chức năng kết nối từ Client đến Server|
-| 2       |    Đăng nhập, đăng ký             |
-| 3       |                    |
+| 2       | Đăng nhập, đăng ký             |
+| 3       | Đổi mật khẩu, Xem Profile           |
+| 4       | Gửi tin nhắn, xem người online                |
+| 5       | Gửi file, gửi riêng tư             |
