@@ -351,16 +351,15 @@ class registerWindow(QWidget):
             registerJSON = json.dumps({"uuid": usernm, "pwd": pwrd, "action": action,
                                        "session_id": session_id})
             client.s.send(registerJSON.encode())
-            result=client.s.recv(1024)
+            result = json.loads(client.s.recv(1024).decode())
 
             if result["result"]:
                 QMessageBox.information(self, "Notification", "Successfull!!!", QMessageBox.Ok, QMessageBox.Ok)
-                dataJSON = json.dumps({"name": fullnm, "dob": dob, "email": eml, "action": action,
+                dataJSON = json.dumps({"name": fullnm, "dob": dob, "email": eml, "action": 'update_info',
                                        "session_id": session_id})
                 client.s.send(dataJSON.encode())
-                result = json.loads(client.s.recv(1024).decode())
                 ########## back to login window ############
-                
+                self.closeEvent()
             else:
                 QMessageBox.information(self, 'Warning', "Username is already exist, please try with other username!",
                                         QMessageBox.Ok,
@@ -490,7 +489,7 @@ Port: {client.port}
             if not username:
                 return
             self.chat_entry.setText('')
-            loginJSON = json.dumps({"msg": username, "action": "send_msg", "session_id": session_id})
+            loginJSON = json.dumps({"msg": username, "action": "send_msg", "session_id": session_id, "private_list": []})
             client.s.send(loginJSON.encode())
 
 
