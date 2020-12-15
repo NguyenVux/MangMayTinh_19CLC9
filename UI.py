@@ -359,7 +359,7 @@ class registerWindow(QWidget):
                                        "session_id": session_id})
                 client.s.send(dataJSON.encode())
                 ########## back to login window ############
-                self.closeEvent()
+                self.close()
             else:
                 QMessageBox.information(self, 'Warning', "Username is already exist, please try with other username!",
                                         QMessageBox.Ok,
