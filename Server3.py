@@ -136,7 +136,7 @@ class Server:
                                                    "errmsg": "already logged in"
                                                    }).encode())
         else:
-            data, result = signup(json_data)
+            data, result = signup(json_data,self.__dbObject)
             data |= {"result": result,
                      'action': json_data["action"]}
             session["connection"].send(json.dumps(data).encode())

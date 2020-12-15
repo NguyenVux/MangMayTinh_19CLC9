@@ -351,12 +351,14 @@ class registerWindow(QWidget):
             registerJSON = json.dumps({"uuid": usernm, "pwd": pwrd, "action": action,
                                        "session_id": session_id})
             client.s.send(registerJSON.encode())
+            result=client.s.recv(1024)
+
             if result["result"]:
                 QMessageBox.information(self, "Notification", "Successfull!!!", QMessageBox.Ok, QMessageBox.Ok)
                 dataJSON = json.dumps({"name": fullnm, "dob": dob, "email": eml, "action": action,
                                        "session_id": session_id})
-                self.s.send(dataJSON.encode())
-                result = json.loads(self.s.recv(1024).decode())
+                client.s.send(dataJSON.encode())
+                result = json.loads(client.s.recv(1024).decode())
                 ########## back to login window ############
                 
             else:
