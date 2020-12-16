@@ -6,6 +6,7 @@ import json
 import random
 import FTP_Server
 
+
 class User(dict):
     def __init__(self, connection):
         dict.__init__(self)
@@ -19,27 +20,26 @@ def authenticate(user, db: DataBase):
         if r["pwd"] == user["pwd"]:
             r.pop("pwd", None)
             return r, True
-    # if user["uuid"] in file_json:
-    #     user_data = file_json[user["uuid"]]
-    #     if user_data["pwd"] == user["pwd"]:
-    #         user_data.pop("pwd", None)
-    #         return user_data, True
     return {}, False
 
 
 def signup(user, db: DataBase):
-    query = {"uuid": user["uuid"]}
-    result = db.user_db.find(query, {"_id": 0})
-    if result.count() == 0 and "uuid" in user and "pwd" in user:
-        data = \
-            {
-                "uuid": user["uuid"],
-                "pwd": user["pwd"],
-                "name": "",
-                "dob": ""
-            }
-        db.user_db.insert_one(data)
+
+    if "uuid" in user and "pwd" in user:
+        query = {"uuid": user["uuid"]}
+        if  db.user_db.count_documents(query) == 0:
+            data = \
+                {
+                    "uuid": user["uuid"],
+                    "pwd": user["pwd"],
+                    "name": "",
+                    "dob": ""
+                }
+            db.user_db.insert_one(data)
+            return {"errmsg": ""}, True
     return {"errmsg": "user name is exist or missing request info"}, False
+
+
 
 
 def gen_id(exist_lst, max_id):
@@ -47,8 +47,6 @@ def gen_id(exist_lst, max_id):
     while session_id in exist_lst:
         session_id = random.randint(0, max_id)
     return str(session_id)
-
-
 class Server:
     def __init__(self, db_object: DataBase):
         self.ftp_server = object
@@ -59,6 +57,7 @@ class Server:
         self.__dictAction["login"] = self.__login
         self.__dictAction["send_msg"] = self.__send_msg
         self.__dictAction["register"] = self.__register
+        self.__dictAction["change_pwd"] = self.__changepwd
         self.__dbObject = db_object
 
         self.__dictRoom = dict()
@@ -170,6 +169,23 @@ class Server:
                 data["user_list"].remove(self.__lstSession[u][key])
                 self.__lstSession[u]["connection"].send(json.dumps(data).encode())
                 data["user_list"].append(self.__lstSession[u][key])
+
+    def __changepwd(self,json_data, session_id):
+        session = self.__lstSession[session_id]
+        print(json_data)
+        if not self.__login_check(session_id):
+            session["connection"].send(json.dumps({"action": json_data["action"],
+                                                   "result": False,
+                                                   "errmsg": "not logged in"
+                                                   }).encode())
+        else:
+            json_data |= {"uuid": session["uuid"]}
+            data, result = authenticate(json_data, self.__dbObject)
+            print(result)
+            if result:
+                self.__dbObject.user_db.update_one({"uuid": session["uuid"]},{ '$set':{"pwd":json_data['new_pwd']}})
+            session["connection"].send(json.dumps({"result": result,"action":json_data["action"]}).encode())
+
 
 
 try:
