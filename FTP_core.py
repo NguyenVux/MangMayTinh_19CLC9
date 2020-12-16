@@ -1,6 +1,4 @@
 import socket
-import threading
-import errno
 import json
 import os
 
@@ -47,7 +45,7 @@ def get(header, root, client: socket):
     print(header)
     file = open(root + '/' + header["file_name"], "wb")
     while received < header["length"]:
-        data = client.recv(4096)
+        data = client.recv(1)
         if len(data) > header["length"]:
             data = data[0:header["length"]]
         received += len(data)

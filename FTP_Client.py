@@ -1,7 +1,8 @@
 import FTP_core
 import socket
 import json
-from tqdm import tqdm
+
+
 
 class FTPClient:
     def __init__(self, host_name):
