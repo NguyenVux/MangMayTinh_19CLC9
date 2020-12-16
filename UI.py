@@ -479,7 +479,7 @@ Port: {client.port}
                     self.listOnline.addItem(i)
             if msg["action"] == "send_msg":
                 if msg["sender"]==client.full_name:
-                    self.chat_print.append( msg["msg"])
+                    self.chat_print.append( msg["msg"]+" :ME")
                     self.chat_print.setAlignment(Qt.AlignRight)
                 else:
                     self.chat_print.append('[' + msg["sender"] + "]:  " + msg["msg"])
@@ -509,7 +509,6 @@ Port: {client.port}
                 changeJSON = json.dumps({"pwd": old_pwd, "new_pwd": new_pwd,
                                      "action": "change_pwd", "session_id": session_id})
             client.s.send(changeJSON.encode())
-            result = json.loads(client.s.recv(1024).decode())
             print(result)
         # Status Notify-----------------------------------------------------------------
 
