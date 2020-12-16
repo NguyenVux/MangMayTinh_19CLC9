@@ -5,6 +5,7 @@ import socket
 import json
 import random
 import FTP_Server
+import json_util
 
 
 class User(dict):
@@ -87,7 +88,8 @@ class Server:
         print("Client Connected")
         while True:
             try:
-                msg = session["connection"].recv(1024).decode()
+                #msg = session["connection"].recv(1024).decode()
+                msg = json_util.receive(session["connection"])
                 if msg[0] == "{" and msg[-1] == "}":
                     msg = json.loads(msg)
                     if msg["session_id"] == session_id:
@@ -108,7 +110,8 @@ class Server:
                 response = dict(action=json_data["action"])
                 response |= data
                 response |= {"result": result}
-                session["connection"].send(json.dumps(response).encode())
+                #session["connection"].send(json.dumps(response).encode())
+                json_util.send(json.dumps(response), session["connection"])
                 response.pop("action")
                 response.pop("result")
                 session |= response
@@ -123,34 +126,44 @@ class Server:
             print(json_data)
             if not json_data["private_list"]:
                 for i in self.__lstSession:
-                    self.__lstSession[i]["connection"].send(
+                    # self.__lstSession[i]["connection"].send(
+                    #     json.dumps(
+                    #         {"result": True, "action": "send_msg",
+                    #          "msg":json_data["msg"],
+                    #          "sender": session["name"]
+                    #          }).encode())
+                    json_util.send(
                         json.dumps(
                             {"result": True, "action": "send_msg",
-                             "msg":json_data["msg"],
+                             "msg": json_data["msg"],
                              "sender": session["name"]
-                             }).encode())
+                             }), self.__lstSession[i]["connection"])
             else:
                 for i in self.__lstSession:
                     if self.__lstSession[i]["uuid"] in json_data["private_list"]:
-                        self.__lstSession[i]["connection"].send(
+                        json_util.send(
                             json.dumps(
                                 {"result": True, "action": "send_msg",
-                                 "msg":json_data["msg"],
+                                 "msg": json_data["msg"],
                                  "sender": session["name"]
-                                 }).encode())
+                                 }), self.__lstSession[i]["connection"])
 
     def __register(self, json_data: dict, session_id):
         session = self.__lstSession[session_id]
         if self.__login_check(session_id):
-            session["connection"].send(json.dumps({"action": json_data["action"],
+            # session["connection"].send(json.dumps({"action": json_data["action"],
+            #                                        "result": False,
+            #                                        "errmsg": "already logged in"
+            #                                        }).encode())
+            json_util.send(json.dumps({"action": json_data["action"],
                                                    "result": False,
                                                    "errmsg": "already logged in"
-                                                   }).encode())
+                                                   }), session["connection"])
         else:
             data, result = signup(json_data,self.__dbObject)
             data |= {"result": result,
                      'action': json_data["action"]}
-            session["connection"].send(json.dumps(data).encode())
+            json_util.send(json.dumps(data), session["connection"])
 
     def __login_check(self, session_id):
         session = self.__lstSession[session_id]
@@ -174,17 +187,17 @@ class Server:
         session = self.__lstSession[session_id]
         print(json_data)
         if not self.__login_check(session_id):
-            session["connection"].send(json.dumps({"action": json_data["action"],
-                                                   "result": False,
-                                                   "errmsg": "not logged in"
-                                                   }).encode())
+            json_util.send(json.dumps({"action": json_data["action"],
+                                       "result": False,
+                                       "errmsg": "not logged in"
+                                       }), session["connection"])
         else:
             json_data |= {"uuid": session["uuid"]}
             data, result = authenticate(json_data, self.__dbObject)
             print(result)
             if result:
                 self.__dbObject.user_db.update_one({"uuid": session["uuid"]},{ '$set':{"pwd":json_data['new_pwd']}})
-            session["connection"].send(json.dumps({"result": result,"action":json_data["action"]}).encode())
+            json_util.send(json.dumps({"result": result,"action":json_data["action"]}), session["connection"])
 
 
 
