@@ -126,7 +126,7 @@ class Server:
         if self.__login_check(session_id):
             print("message by [" + session["name"] + "]" + "\n" + json_data["msg"])
             print(json_data)
-            if not json_data["private_list"]:
+            if "private_list" not in json_data or not json_data["private_list"]:
                 for i in self.__lstSession:
                     # self.__lstSession[i]["connection"].send(
                     #     json.dumps(
@@ -182,7 +182,7 @@ class Server:
         for u in self.__lstSession:
             if "name" in self.__lstSession[u]:
                 data["user_list"].remove(self.__lstSession[u][key])
-                self.__lstSession[u]["connection"].send(json.dumps(data).encode())
+                json_util.send(json.dumps(data), self.__lstSession[u]["connection"])
                 data["user_list"].append(self.__lstSession[u][key])
 
     def __changepwd(self, json_data, session_id):

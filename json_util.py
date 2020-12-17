@@ -9,7 +9,6 @@ def receive(sock: socket):
     i = 10
     while not (data.startswith(open_delimiter) and data.endswith(ending_delimiter)):
         data += sock.recv(1)
-    print(data)
     return data[2:-2]
 
 

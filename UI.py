@@ -227,8 +227,10 @@ class loginWindow(QWidget):
 
         loginJSON = json.dumps(
             {"uuid": client.username, "pwd": client.password, "action": action, "session_id": session_id})
-        client.s.send(loginJSON.encode())
-        result = json.loads(client.s.recv(1024).decode())
+        #client.s.send(loginJSON.encode())
+        json_util.send(loginJSON, client.s)
+        #result = json.loads(client.s.recv(1024).decode())
+        result = json.loads(json_util.receive(client.s).decode())
         if result["result"]:
             client.full_name = result["name"]
             QMessageBox.information(self, "Login successfully!!!!", "Hello, " + client.full_name + " <3",
@@ -353,14 +355,18 @@ class registerWindow(QWidget):
         else:
             registerJSON = json.dumps({"uuid": usernm, "pwd": pwrd, "action": action,
                                        "session_id": session_id})
-            client.s.send(registerJSON.encode())
-            result = json.loads(client.s.recv(1024).decode())
+            #client.s.send(registerJSON.encode())
+            json_util.send(registerJSON, client.s)
+            #result = json.loads(client.s.recv(1024).decode())
+            result = json.loads(json_util.receive(client.s).decode())
 
             if result["result"]:
                 QMessageBox.information(self, "Notification", "Successfull!!!", QMessageBox.Ok, QMessageBox.Ok)
                 dataJSON = json.dumps({"name": fullnm, "dob": dob, "email": eml, "action": 'update_info',
                                        "session_id": session_id})
-                client.s.send(dataJSON.encode())
+                #client.s.send(dataJSON.encode())
+                json_util.send(dataJSON, client.s)
+
                 ########## back to login window ############
                 self.close()
             else:
@@ -471,7 +477,8 @@ Port: {client.port}
         global client
         global session_id
         while not flag:
-            msg = client.s.recv(1204).decode()
+            #msg = client.s.recv(1204).decode()
+            msg = json_util.receive(client.s).decode()
             msg = json.loads(msg)
             if msg["action"] == "status_notify":
                 self.listOnline.clear()
@@ -509,7 +516,8 @@ Port: {client.port}
             else:
                 changeJSON = json.dumps({"pwd": old_pwd, "new_pwd": new_pwd,
                                      "action": "change_pwd", "session_id": session_id})
-            client.s.send(changeJSON.encode())
+            #client.s.send(changeJSON.encode())
+            json_util.send(changeJSON, client.s)
             print(result)
         # Status Notify-----------------------------------------------------------------
 
@@ -519,9 +527,10 @@ Port: {client.port}
             if not username:
                 return
             self.chat_entry.setText('')
-            loginJSON = json.dumps(
+            chatJson = json.dumps(
                 {"msg": username, "action": "send_msg", "session_id": session_id, "private_list": []})
-            client.s.send(loginJSON.encode())
+            #client.s.send(loginJSON.encode())
+            json_util.send(chatJson, client.s)
 
 
 ##############start##############
