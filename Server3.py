@@ -89,8 +89,9 @@ class Server:
         print("Client Connected")
         while True:
             try:
-                #msg = session["connection"].recv(1024).decode()
-                msg = json_util.receive(session["connection"])
+                # msg = session["connection"].recv(1024).decode()
+                msg = json_util.receive(session["connection"]).decode()
+                print(msg)
                 if msg[0] == "{" and msg[-1] == "}":
                     msg = json.loads(msg)
                     if msg["session_id"] == session_id:
@@ -111,7 +112,7 @@ class Server:
                 response = dict(action=json_data["action"])
                 response |= data
                 response |= {"result": result}
-                #session["connection"].send(json.dumps(response).encode())
+                # session["connection"].send(json.dumps(response).encode())
                 json_util.send(json.dumps(response), session["connection"])
                 response.pop("action")
                 response.pop("result")
@@ -135,7 +136,7 @@ class Server:
                     #          }).encode())
                     json_util.send(
                         json.dumps(
-                            {"result": True, "action": Action.send_msg,
+                            {"result": True, "action": Action.send_message,
                              "msg": json_data["msg"],
                              "sender": session["name"]
                              }), self.__lstSession[i]["connection"])
@@ -157,9 +158,9 @@ class Server:
             #                                        "errmsg": "already logged in"
             #                                        }).encode())
             json_util.send(json.dumps({"action": json_data["action"],
-                                                   "result": False,
-                                                   "errmsg": "already logged in"
-                                                   }), session["connection"])
+                                       "result": False,
+                                       "errmsg": "already logged in"
+                                       }), session["connection"])
         else:
             data, result = signup(json_data, self.__dbObject)
             data |= {"result": result,
@@ -198,7 +199,7 @@ class Server:
             print(result)
             if result:
                 self.__dbObject.user_db.update_one({"uuid": session["uuid"]},
-                                                   {'$set':{
+                                                   {'$set': {
                                                        "pwd": json_data['new_pwd']
                                                    }
                                                    })
@@ -214,7 +215,7 @@ class Server:
                         "dob": json_data["dob"],
                         "email": json_data['email']
                         }
-            self.__dbObject.user_db.update(query,{"$set":new_info})
+            self.__dbObject.user_db.update(query, {"$set": new_info})
 
 
 try:

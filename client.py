@@ -1,7 +1,7 @@
 import socket
 import threading
 import json
-
+import json_util
 
 SEPARATOR = "<SEPARATOR>"
 BUFFER_SIZE = 4096
@@ -33,8 +33,9 @@ class Client:
                 username = input('Enter username --> ')
                 password = input('Enter password --> ')
                 loginJSON = json.dumps({"uuid": username, "pwd": password, "action": action, "session_id": session_id})
-                self.s.send(loginJSON.encode())
-                result = json.loads(self.s.recv(1024).decode())
+                #self.s.send(loginJSON.encode())
+                json_util.send(loginJSON, self.s)
+                result = json.loads(json_util.receive(self.s))
                 print(result)
                 if result["result"]:
                     print("Succeed")
@@ -49,7 +50,8 @@ class Client:
                 password = input('Enter password --> ')
                 registerJSON = json.dumps({"uuid": username, "pwd": password, "action": action,
                                            "session_id": session_id})
-                self.s.send(registerJSON.encode())
+                #self.s.send(registerJSON.encode())
+                json_util.send(registerJSON, self.s)
                 if result["result"]:
                     print("Succeed")
                     print("user info " + result["name"])
@@ -59,7 +61,7 @@ class Client:
                     dataJSON = json.dumps({"name": name, "dob": dob, "email": email, "action": action,
                                            "session_id": session_id})
                     self.s.send(dataJSON.encode())
-                    result = json.loads(self.s.recv(1024).decode())
+                    result = json.loads(json_util.receive(self.s))
                     print(result)
                 else:
                     print("Fail")
@@ -73,7 +75,7 @@ class Client:
 
     def handle_messages(self, session_id):
         while 1:
-            msg = self.s.recv(1204).decode()
+            msg = json_util.receive(self.s)
             msg = json.loads(msg)
             if msg["action"] == "status_notify":
                 for i in msg["user_list"]:
@@ -105,7 +107,8 @@ class Client:
                 print("room")
                 username = input('room-> ')
                 loginJSON = json.dumps({"room": username, "action": action, "session_id": session_id})
-                self.s.send(loginJSON.encode())
+                #self.s.send(loginJSON.encode())
+                json_util.send(loginJSON, self.s)
             # Status Notify-----------------------------------------------------------------
 
             # Send Mess-----------------------------------------------------------------
@@ -113,7 +116,8 @@ class Client:
                 print("room")
                 username = input('msg-> ')
                 loginJSON = json.dumps({"msg": username, "action": action, "session_id": session_id})
-                self.s.send(loginJSON.encode())
+                #self.s.send(loginJSON.encode())
+                json_util.send(loginJSON, self.s)
 
 
 # Send File-----------------------------------------------------------------

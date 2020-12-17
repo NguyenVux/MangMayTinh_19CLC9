@@ -7,8 +7,9 @@ ending_delimiter = b"}-$"
 def receive(sock: socket):
     data = b''
     i = 10
-    while not data.startswith(open_delimiter) and not data.endswith(ending_delimiter):
+    while not (data.startswith(open_delimiter) and data.endswith(ending_delimiter)):
         data += sock.recv(1)
+    print(data)
     return data[2:-2]
 
 
