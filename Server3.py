@@ -91,7 +91,6 @@ class Server:
             try:
                 # msg = session["connection"].recv(1024).decode()
                 msg = json_util.receive(session["connection"]).decode()
-                print(msg)
                 if msg[0] == "{" and msg[-1] == "}":
                     msg = json.loads(msg)
                     if msg["session_id"] == session_id:
@@ -125,7 +124,6 @@ class Server:
         session = self.__lstSession[session_id]
         if self.__login_check(session_id):
             print("message by [" + session["name"] + "]" + "\n" + json_data["msg"])
-            print(json_data)
             if "private_list" not in json_data or not json_data["private_list"]:
                 for i in self.__lstSession:
                     # self.__lstSession[i]["connection"].send(
