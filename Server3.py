@@ -5,6 +5,7 @@ import socket
 import json
 import random
 import FTP_Server
+from action_util import Action
 import json_util
 
 
@@ -25,10 +26,9 @@ def authenticate(user, db: DataBase):
 
 
 def signup(user, db: DataBase):
-
     if "uuid" in user and "pwd" in user:
         query = {"uuid": user["uuid"]}
-        if  db.user_db.count_documents(query) == 0:
+        if db.user_db.count_documents(query) == 0:
             data = \
                 {
                     "uuid": user["uuid"],
@@ -41,13 +41,13 @@ def signup(user, db: DataBase):
     return {"errmsg": "user name is exist or missing request info"}, False
 
 
-
-
 def gen_id(exist_lst, max_id):
     session_id = random.randint(0, max_id)
     while session_id in exist_lst:
         session_id = random.randint(0, max_id)
     return str(session_id)
+
+
 class Server:
     def __init__(self, db_object: DataBase):
         self.ftp_server = object
@@ -55,18 +55,19 @@ class Server:
         self.__lstUser = list()
         self.__lstSession = dict()
         self.__dictAction = dict()
-        self.__dictAction["login"] = self.__login
-        self.__dictAction["send_msg"] = self.__send_msg
-        self.__dictAction["register"] = self.__register
-        self.__dictAction["change_pwd"] = self.__changepwd
+        self.__dictAction[Action.login] = self.__login
+        self.__dictAction[Action.send_message] = self.__send_msg
+        self.__dictAction[Action.sign_up] = self.__register
+        self.__dictAction[Action.change_pwd] = self.__changepwd
+        self.__dictAction[Action.update_info] = self.__update_info
         self.__dbObject = db_object
 
         self.__dictRoom = dict()
 
     def start_server(self):
         host = socket.gethostbyname(socket.gethostname())
-        port = 5000 #int(input('Enter port to run the server on --> '))
-        self.ftp_server = FTP_Server.FTPServer(port +1)
+        port = 5000  # int(input('Enter port to run the server on --> '))
+        self.ftp_server = FTP_Server.FTPServer(port + 1)
         self.__socketServer.bind((host, port))
         self.__socketServer.listen(100)
         print('Starting MSG server:')
@@ -134,7 +135,7 @@ class Server:
                     #          }).encode())
                     json_util.send(
                         json.dumps(
-                            {"result": True, "action": "send_msg",
+                            {"result": True, "action": Action.send_msg,
                              "msg": json_data["msg"],
                              "sender": session["name"]
                              }), self.__lstSession[i]["connection"])
@@ -143,7 +144,7 @@ class Server:
                     if self.__lstSession[i]["uuid"] in json_data["private_list"]:
                         json_util.send(
                             json.dumps(
-                                {"result": True, "action": "send_msg",
+                                {"result": True, "action": Action.send_message,
                                  "msg": json_data["msg"],
                                  "sender": session["name"]
                                  }), self.__lstSession[i]["connection"])
@@ -160,7 +161,7 @@ class Server:
                                                    "errmsg": "already logged in"
                                                    }), session["connection"])
         else:
-            data, result = signup(json_data,self.__dbObject)
+            data, result = signup(json_data, self.__dbObject)
             data |= {"result": result,
                      'action': json_data["action"]}
             json_util.send(json.dumps(data), session["connection"])
@@ -173,7 +174,7 @@ class Server:
 
     def __notify_status(self, session_id):
         key = "uuid"
-        data = {"action": "status_notify", "user_list": []}
+        data = {"action": Action.status_notify, "user_list": []}
         for u in self.__lstSession:
             if "name" in self.__lstSession[u]:
                 data["user_list"].append(self.__lstSession[u][key])
@@ -183,7 +184,7 @@ class Server:
                 self.__lstSession[u]["connection"].send(json.dumps(data).encode())
                 data["user_list"].append(self.__lstSession[u][key])
 
-    def __changepwd(self,json_data, session_id):
+    def __changepwd(self, json_data, session_id):
         session = self.__lstSession[session_id]
         print(json_data)
         if not self.__login_check(session_id):
@@ -196,9 +197,24 @@ class Server:
             data, result = authenticate(json_data, self.__dbObject)
             print(result)
             if result:
-                self.__dbObject.user_db.update_one({"uuid": session["uuid"]},{ '$set':{"pwd":json_data['new_pwd']}})
-            json_util.send(json.dumps({"result": result,"action":json_data["action"]}), session["connection"])
+                self.__dbObject.user_db.update_one({"uuid": session["uuid"]},
+                                                   {'$set':{
+                                                       "pwd": json_data['new_pwd']
+                                                   }
+                                                   })
+            json_util.send(json.dumps({"result": result,
+                                       "action": json_data["action"]
+                                       }), session["connection"])
 
+    def __update_info(self, json_data, session_id):
+        session = self.__lstSession[session_id]
+        if self.__login_check(session_id):
+            query = {"uuid": session["uuid"]}
+            new_info = {"name": json_data["name"],
+                        "dob": json_data["dob"],
+                        "email": json_data['email']
+                        }
+            self.__dbObject.user_db.update(query,{"$set":new_info})
 
 
 try:
