@@ -60,6 +60,7 @@ class Server:
         self.__dictAction[Action.sign_up] = self.__register
         self.__dictAction[Action.change_pwd] = self.__changepwd
         self.__dictAction[Action.update_info] = self.__update_info
+        self.__dictAction[Action.view_info] = self.__view_info
         self.__dbObject = db_object
 
         self.__dictRoom = dict()
@@ -215,7 +216,22 @@ class Server:
                         }
             self.__dbObject.user_db.update(query, {"$set": new_info})
 
-
+    def __view_info(self,json_data, session_id):
+        session = self.__lstSession[session_id]
+        if self.__login_check(session_id):
+            query = {"uuid": json_data["uuid"]}
+            result = self.__dbObject.user_db.find_one(query, {"_id": 0, "pwd": 0})
+            for r in result:
+                data = r
+                data |= {"result": True,
+                         "action": json_data["action"]}
+                json_util.send(json.dumps(data),
+                               session["connection"])
+                return
+            data = {"result": False,
+                    "action": json_data["action"]}
+            json_util.send(json.dumps(data),
+                       session["connection"])
 try:
     db = DataBase()
     s = Server(db)
