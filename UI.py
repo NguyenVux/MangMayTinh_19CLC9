@@ -13,7 +13,7 @@ from threading import Thread
 import json
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QFont, QPixmap, QMovie
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QTextDocument, QTextOption, QColor
 from PyQt5.QtCore import *
 from PyQt5 import QtCore
 from PyQt5 import QtGui
@@ -27,6 +27,108 @@ flag = False
 
 
 # session_id = self.s.recv(1024).decode()
+
+USER_ME = 0
+USER_THEM = 1
+
+BUBBLE_COLORS = {USER_ME: "#90caf9", USER_THEM: "#a5d6a7"}
+USER_TRANSLATE = {USER_ME: QPoint(20, 0), USER_THEM: QPoint(0, 0)}
+
+BUBBLE_PADDING = QMargins(15, 5, 35, 5)
+TEXT_PADDING = QMargins(25, 15, 45, 15)
+
+
+class MessageDelegate(QStyledItemDelegate):
+    """
+    Draws each message.
+    """
+
+    _font = None
+
+    def paint(self, painter, option, index):
+        painter.save()
+        # Retrieve the user,message uple from our model.data method.
+        user, text = index.model().data(index, Qt.DisplayRole)
+
+        trans = USER_TRANSLATE[user]
+        painter.translate(trans)
+
+        # option.rect contains our item dimensions. We need to pad it a bit
+        # to give us space from the edge to draw our shape.
+        bubblerect = option.rect.marginsRemoved(BUBBLE_PADDING)
+        textrect = option.rect.marginsRemoved(TEXT_PADDING)
+
+        # draw the bubble, changing color + arrow position depending on who
+        # sent the message. the bubble is a rounded rect, with a triangle in
+        # the edge.
+        painter.setPen(Qt.NoPen)
+        color = QColor(BUBBLE_COLORS[user])
+        painter.setBrush(color)
+        painter.drawRoundedRect(bubblerect, 10, 10)
+
+        # draw the triangle bubble-pointer, starting from the top left/right.
+        if user == USER_ME:
+            p1 = bubblerect.topRight()
+        else:
+            p1 = bubblerect.topLeft()
+        painter.drawPolygon(p1 + QPoint(-20, 0), p1 + QPoint(20, 0), p1 + QPoint(0, 20))
+
+        toption = QTextOption()
+        toption.setWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
+
+        # draw the text
+        doc = QTextDocument(text)
+        doc.setTextWidth(textrect.width())
+        doc.setDefaultTextOption(toption)
+        doc.setDocumentMargin(0)
+
+        painter.translate(textrect.topLeft())
+        doc.drawContents(painter)
+        painter.restore()
+
+    def sizeHint(self, option, index):
+        _, text = index.model().data(index, Qt.DisplayRole)
+        textrect = option.rect.marginsRemoved(TEXT_PADDING)
+
+        toption = QTextOption()
+        toption.setWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
+
+        doc = QTextDocument(text)
+        doc.setTextWidth(textrect.width())
+        doc.setDefaultTextOption(toption)
+        doc.setDocumentMargin(0)
+
+        textrect.setHeight(int(doc.size().height()))
+        textrect = textrect.marginsAdded(TEXT_PADDING)
+        return textrect.size()
+
+
+class MessageModel(QAbstractListModel):
+    def __init__(self, *args, **kwargs):
+        super(MessageModel, self).__init__(*args, **kwargs)
+        self.messages = []
+
+    def data(self, index, role):
+        if role == Qt.DisplayRole:
+            # Here we pass the delegate the user, message tuple.
+            return self.messages[index.row()]
+
+    def setData(self, index, role, value):
+        self._size[index.row()]
+
+    def rowCount(self, index):
+        return len(self.messages)
+
+    def add_message(self, who, text):
+        """
+        Add an message to our message list, getting the text from the QLineEdit
+        """
+        if text:  # Don't add empty strings.
+            # Access the list via the model.
+            self.messages.append((who, text))
+            # Trigger refresh.
+            self.layoutChanged.emit()
+
 
 class Client():
     username = ''
@@ -212,6 +314,9 @@ class loginWindow(QWidget):
         self.bot_hbox.addWidget(btn_login)
         form.addRow(self.bot_hbox)
 
+        self.username_entry.setText("thai")
+        self.passwrd_entry.setText("123")
+
         self.main_layout.addLayout(form)
 
         self.setLayout(self.main_layout)
@@ -227,9 +332,9 @@ class loginWindow(QWidget):
 
         loginJSON = json.dumps(
             {"uuid": client.username, "pwd": client.password, "action": action, "session_id": session_id})
-        #client.s.send(loginJSON.encode())
+        # client.s.send(loginJSON.encode())
         json_util.send(loginJSON, client.s)
-        #result = json.loads(client.s.recv(1024).decode())
+        # result = json.loads(client.s.recv(1024).decode())
         result = json.loads(json_util.receive(client.s).decode())
         if result["result"]:
             client.full_name = result["name"]
@@ -355,16 +460,16 @@ class registerWindow(QWidget):
         else:
             registerJSON = json.dumps({"uuid": usernm, "pwd": pwrd, "action": action,
                                        "session_id": session_id})
-            #client.s.send(registerJSON.encode())
+            # client.s.send(registerJSON.encode())
             json_util.send(registerJSON, client.s)
-            #result = json.loads(client.s.recv(1024).decode())
+            # result = json.loads(client.s.recv(1024).decode())
             result = json.loads(json_util.receive(client.s).decode())
 
             if result["result"]:
                 QMessageBox.information(self, "Notification", "Successfull!!!", QMessageBox.Ok, QMessageBox.Ok)
                 dataJSON = json.dumps({"name": fullnm, "dob": dob, "email": eml, "action": 'update_info',
                                        "session_id": session_id})
-                #client.s.send(dataJSON.encode())
+                # client.s.send(dataJSON.encode())
                 json_util.send(dataJSON, client.s)
 
                 ########## back to login window ############
@@ -420,8 +525,13 @@ class mainWindow(QWidget):
         self.main_layout.addWidget(self.bar)
 
         ################### LAYOUT CHAT #######################
-        self.chat_print = QTextEdit()
-        self.chat_print.setFocusPolicy(Qt.NoFocus)
+        # self.chat_print = QTextEdit()
+        # self.chat_print.setFocusPolicy(Qt.NoFocus)
+
+        self.chat_print = QListView()
+        self.chat_print.setItemDelegate(MessageDelegate())
+        self.model = MessageModel()
+        self.chat_print.setModel(self.model)
 
         self.chat_entry = QLineEdit()
         self.chat_entry.setPlaceholderText('Type your message...')
@@ -476,8 +586,12 @@ Port: {client.port}
         global flag
         global client
         global session_id
+
+        printer = Communicate()
+        printer.print.connect(self.addMsg)
+
         while not flag:
-            #msg = client.s.recv(1204).decode()
+            # msg = client.s.recv(1204).decode()
             msg = json_util.receive(client.s).decode()
             msg = json.loads(msg)
             if msg["action"] == "status_notify":
@@ -486,12 +600,14 @@ Port: {client.port}
                 for i in msg["user_list"]:
                     self.listOnline.addItem(i)
             if msg["action"] == "send_msg":
-                if msg["sender"]==client.full_name:
-                    self.chat_print.append( msg["msg"]+" :ME")
-                    self.chat_print.setAlignment(Qt.AlignRight)
+                if msg["sender"] == client.full_name:
+                    # self.chat_print.append(msg["msg"] + " :ME")
+                    # self.chat_print.setAlignment(Qt.AlignRight)
+                    printer.print.emit(USER_ME,msg['msg'])
                 else:
-                    self.chat_print.append('[' + msg["sender"] + "]:  " + msg["msg"])
-                    self.chat_print.setAlignment(Qt.AlignLeft)
+                    # self.chat_print.append('[' + msg["sender"] + "]:  " + msg["msg"])
+                    # self.chat_print.setAlignment(Qt.AlignLeft)
+                    printer.print.emit(USER_THEM, msg['msg'])
 
     def input_handler(self, btn):
         global session_id
@@ -504,21 +620,22 @@ Port: {client.port}
             return
         # Change Password----------------------------------------------------------
         if action == "Change password":
-            print("Old Pwd")
-            old_pwd = input('msg-> ')
-            print("New Pwd")
-            new_pwd = input('msg-> ')
-            print("New Pwd Again")
-            new_pwd_2 = input('msg-> ')
-            if not new_pwd == new_pwd_2:
-                QMessageBox.information(self, "Notification", "new password doesn't match confirm password",
-                                        QMessageBox.Ok, QMessageBox.Ok)
-            else:
-                changeJSON = json.dumps({"pwd": old_pwd, "new_pwd": new_pwd,
-                                     "action": "change_pwd", "session_id": session_id})
-            #client.s.send(changeJSON.encode())
-            json_util.send(changeJSON, client.s)
-            print(result)
+            self.changepwd()
+            # print("Old Pwd")
+            # old_pwd = input('msg-> ')
+            # print("New Pwd")
+            # new_pwd = input('msg-> ')
+            # print("New Pwd Again")
+            # new_pwd_2 = input('msg-> ')
+            # if not new_pwd == new_pwd_2:
+            #     QMessageBox.information(self, "Notification", "new password doesn't match confirm password",
+            #                             QMessageBox.Ok, QMessageBox.Ok)
+            # else:
+            #     changeJSON = json.dumps({"pwd": old_pwd, "new_pwd": new_pwd,
+            #                          "action": "change_pwd", "session_id": session_id})
+            # #client.s.send(changeJSON.encode())
+            # json_util.send(changeJSON, client.s)
+            # print(result)
         # Status Notify-----------------------------------------------------------------
 
         # Send Mess-----------------------------------------------------------------
@@ -529,9 +646,76 @@ Port: {client.port}
             self.chat_entry.setText('')
             chatJson = json.dumps(
                 {"msg": username, "action": "send_msg", "session_id": session_id, "private_list": []})
-            #client.s.send(loginJSON.encode())
+            # client.s.send(loginJSON.encode())
             json_util.send(chatJson, client.s)
 
+    def changepwd(self):
+        self.changePw_wd = changePwdWindown()
+    def addMsg(self, user, msg):
+        self.model.add_message(user,msg)
+
+class Communicate(QObject):
+    print=pyqtSignal(int,str)
+class changePwdWindown(QWidget):
+    def __init__(self):
+        super(changePwdWindown, self).__init__()
+        self.title = 'Change password'
+        self.left = 500
+        self.top = 300
+        self.width = 300
+        self.height = 100
+        self.initUI()
+        self.show()
+
+    def initUI(self):
+        self.mainLayout = QVBoxLayout()
+
+        self.setWindowTitle(self.title)
+        self.setWindowIcon(QIcon('image/chat.png'))
+        self.setGeometry(self.left, self.top, self.width, self.height)
+
+        form = QFormLayout()
+
+        cur_pwd = QLabel("Old Password")
+        self.cur_pwdEntry = QLineEdit()
+        self.cur_pwdEntry.setEchoMode(QLineEdit.Password)
+        form.addRow(cur_pwd, self.cur_pwdEntry)
+
+        newpwd = QLabel("New password")
+        self.newpwd_entry = QLineEdit()
+        self.newpwd_entry.setEchoMode(QLineEdit.Password)
+        form.addRow(newpwd, self.newpwd_entry)
+
+        newpwd_verify = QLabel("Verify password")
+        self.newpwd_verify_entry = QLineEdit()
+        self.newpwd_verify_entry.setEchoMode(QLineEdit.Password)
+        form.addRow(newpwd_verify, self.newpwd_verify_entry)
+
+        btn = QPushButton("Change")
+        form.addRow(btn)
+        btn.clicked.connect(self.processing)
+        self.mainLayout.addLayout(form)
+        self.setLayout(self.mainLayout)
+
+    def processing(self):
+        global client
+        global session_id
+        newpwd = self.newpwd_entry.text()
+        newpwd2 = self.newpwd_verify_entry.text()
+        if not newpwd or not newpwd2 or not self.cur_pwdEntry.text():
+            QMessageBox.information(self, "Notification", "Do not empty!!!!",
+                                    QMessageBox.Ok, QMessageBox.Ok)
+        elif newpwd != newpwd2:
+            QMessageBox.information(self, "Notification", "new password doesn't match confirm password",
+                                    QMessageBox.Ok, QMessageBox.Ok)
+        elif client.password != self.cur_pwdEntry.text():
+            QMessageBox.information(self, "Notification", "Old password is wrong!!!!",
+                                    QMessageBox.Ok, QMessageBox.Ok)
+        else:
+            changeJSON = json.dumps({"pwd": client.password, "new_pwd": newpwd,
+                                     "action": "change_pwd", "session_id": session_id})
+            #client.s.send(changeJSON.encode())
+            json_util.send(changeJSON, client.s)
 
 ##############start##############
 if __name__ == '__main__':
