@@ -317,9 +317,6 @@ class loginWindow(QWidget):
         self.bot_hbox.addWidget(btn_login)
         form.addRow(self.bot_hbox)
 
-        self.username_entry.setText("thai")
-        self.passwrd_entry.setText("123")
-
         self.main_layout.addLayout(form)
 
         self.setLayout(self.main_layout)
