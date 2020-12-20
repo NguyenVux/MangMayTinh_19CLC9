@@ -25,7 +25,7 @@ action = ""
 result = dict(result="failed")
 session_id = None
 flag = False
-userOnline=[]
+userOnline = []
 
 # session_id = self.s.recv(1024).decode()
 
@@ -141,8 +141,10 @@ class Client():
     host = ''
     s = None
 
+
 def Diff(li1, li2):
-    return (list(list(set(li1)-set(li2)) + list(set(li2)-set(li1))))
+    return (list(list(set(li1) - set(li2)) + list(set(li2) - set(li1))))
+
 
 class startWindow(QWidget):
     def __init__(self):
@@ -518,22 +520,19 @@ class mainWindow(QWidget):
         change_pwd = QAction("Change password", self)
         file_menu.addAction(change_pwd)
 
-
-
         change_pwd.triggered.connect(lambda: self.input_handler(change_pwd))
         my_profile.triggered.connect(lambda: self.input_handler(my_profile))
-
 
         exit = QAction("Exit", self)
         exit.setShortcut("ctrl+q")
         file_menu.addAction(exit)
         self.main_layout.addWidget(self.bar)
         ######## FIND PROFILE LAYOUT ############
-        form_find=QHBoxLayout()
+        form_find = QHBoxLayout()
         self.find_profile = QLineEdit()
         self.find_profile.setPlaceholderText("Find profile of an user")
         self.main_layout.addWidget(self.find_profile)
-        findPf_btn=QPushButton("Find profile")
+        findPf_btn = QPushButton("Find profile")
 
         self.find_profile.returnPressed.connect(lambda: self.input_handler(findPf_btn))
         findPf_btn.clicked.connect(lambda: self.input_handler(findPf_btn))
@@ -597,15 +596,16 @@ Port: {client.port}
         global userOnline
 
         printer = Communicate()
-        printer.print.connect(self.addMsg)
+        printer.print_chat.connect(self.addMsg)
+        printer.print_info.connect(self.findProfile)
 
         while not flag:
             # msg = client.s.recv(1204).decode()
             msg = json_util.receive(client.s).decode()
             msg = json.loads(msg)
             if msg["action"] == "status_notify":
-                list_online=[]
-                list_filter=[]
+                list_online = []
+                list_filter = []
                 self.listOnline.clear()
                 self.private_list.clear()
                 self.private_list.addItem("all")
@@ -614,24 +614,25 @@ Port: {client.port}
                     self.private_list.addItem(i)
                     list_online.append(i)
                 if not userOnline:
-                    userOnline=list_online
+                    userOnline = list_online
                 else:
-                    list_filter=Diff(userOnline, list_online)
+                    list_filter = Diff(userOnline, list_online)
                     for i in list_filter:
                         if i in userOnline:
-                            printer.print.emit(USER_THEM,"[server]: "+i+" left")
-                    userOnline=list_online
+                            printer.print_chat.emit(USER_THEM, "[server]: " + i + " left")
+                    userOnline = list_online
             if msg["action"] == "send_msg":
                 if msg["sender"] == client.full_name:
-                    # self.chat_print.append(msg["msg"] + " :ME")
-                    # self.chat_print.setAlignment(Qt.AlignRight)
-                    printer.print.emit(USER_ME, msg['msg'])
+                    printer.print_chat.emit(USER_ME, msg['msg'])
                 else:
-                    # self.chat_print.append('[' + msg["sender"] + "]:  " + msg["msg"])
-                    # self.chat_print.setAlignment(Qt.AlignLeft)
-                    printer.print.emit(USER_THEM, msg['sender'] + ": " + msg['msg'])
+                    if msg["private"] == 1:
+                        printer.print_chat.emit(USER_THEM, msg['sender'] + " (private): " + msg['msg'])
+                    else:
+                        printer.print_chat.emit(USER_THEM, msg['sender'] + ": " + msg['msg'])
             if msg["action"] == action_util.Action.view_info:
                 print(msg)
+                printer.print_info.emit(msg)
+
     def input_handler(self, btn):
         global session_id
         global client
@@ -666,7 +667,7 @@ Port: {client.port}
             print(chatJson)
             json_util.send(chatJson, client.s)
         # view info -----------------------------------------------------------
-        if action == "My profile" or action =="Find profile":
+        if action == "My profile" or action == "Find profile":
             profileJSON = json.dumps(
                 {"uuid": self.find_profile.text(), "action": action_util.Action.view_info, "session_id": session_id})
             json_util.send(profileJSON, client.s)
@@ -674,7 +675,8 @@ Port: {client.port}
         if action == "Update profile":
             updateJSON = json.dumps(
                 {"name": client.full_name, "dob": client.dob, "email": client.email, "session_id": session_id})
-            json_util.send(updateJSON,client.s)
+            json_util.send(updateJSON, client.s)
+
     def changepwd(self):
         self.changePw_wd = changePwdWindown()
 
@@ -684,13 +686,18 @@ Port: {client.port}
     def myProfile(self):
         self.my_prof = myProfileWindow()
 
-    def findProfile(self):
-        pass
+    def findProfile(self, profile):
+        inform = f"""
+        Name: {profile['name']}
+        Date of birth:{profile['dob']}
+        email:{profile['email']}
+        """
+        QMessageBox.information(self, profile["uuid"], inform, QMessageBox.Ok, QMessageBox.ok)
 
 
 class Communicate(QObject):
-    print = pyqtSignal(int, str)
-
+    print_chat = pyqtSignal(int, str)
+    print_info = pyqtSignal(dict)
 
 class changePwdWindown(QWidget):
     def __init__(self):
