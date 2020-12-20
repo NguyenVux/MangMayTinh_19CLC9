@@ -136,7 +136,7 @@ class Server:
                     json_util.send(
                         json.dumps(
                             {"result": True, "action": Action.send_message,
-                             "msg": json_data["msg"],
+                             "msg": json_data["msg"], "private": 0,
                              "sender": session["name"]
                              }), self.__lstSession[i]["connection"])
             else:
@@ -145,7 +145,7 @@ class Server:
                         json_util.send(
                             json.dumps(
                                 {"result": True, "action": Action.send_message,
-                                 "msg": json_data["msg"],
+                                 "msg": json_data["msg"], "private": 1,
                                  "sender": session["name"]
                                  }), self.__lstSession[i]["connection"])
 
