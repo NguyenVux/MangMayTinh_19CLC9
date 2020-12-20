@@ -220,11 +220,15 @@ class Server:
         session = self.__lstSession[session_id]
         if self.__login_check(session_id):
             query = {"uuid": json_data["uuid"]}
+            print(json_data)
             result = self.__dbObject.user_db.find_one(query, {"_id": 0, "pwd": 0})
-            for r in result:
-                data = r
+            print("result:")
+            print(result)
+            if result:
+                data = result
                 data |= {"result": True,
                          "action": json_data["action"]}
+                print(data)
                 json_util.send(json.dumps(data),
                                session["connection"])
                 return
