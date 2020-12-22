@@ -27,8 +27,6 @@ session_id = None
 flag = False
 userOnline = []
 
-# session_id = self.s.recv(1024).decode()
-
 USER_ME = 0
 USER_THEM = 1
 
@@ -462,16 +460,13 @@ class registerWindow(QWidget):
         else:
             registerJSON = json.dumps({"uuid": usernm, "pwd": pwrd, "action": action,
                                        "session_id": session_id})
-            # client.s.send(registerJSON.encode())
             json_util.send(registerJSON, client.s)
-            # result = json.loads(client.s.recv(1024).decode())
             result = json.loads(json_util.receive(client.s).decode())
 
             if result["result"]:
                 QMessageBox.information(self, "Notification", "Successfull!!!", QMessageBox.Ok, QMessageBox.Ok)
                 dataJSON = json.dumps({"name": fullnm, "dob": dob, "email": eml, "action": 'update_info',
                                        "session_id": session_id})
-                # client.s.send(dataJSON.encode())
                 json_util.send(dataJSON, client.s)
 
                 ########## back to login window ############
@@ -489,8 +484,8 @@ class mainWindow(QWidget):
         self.title = 'Chat Room'
         self.left = 500
         self.top = 300
-        self.width = 600
-        self.height = 600
+        self.width = 700
+        self.height = 700
         self.setWindowTitle(self.title)
         self.setWindowIcon(QIcon('image/chat.png'))
         self.setGeometry(self.left, self.top, self.width, self.height)
@@ -566,21 +561,43 @@ Host: {client.host}
 Port: {client.port}
         """)
         info_status.setFont(font)
-
+# layout view user online list -------------------------------------------------------
         listOnline_label = QLabel("Online")
         self.listOnline = QListWidget()
         self.listOnline.addItem("all")
+# layout upload and download file------------------------------------------------------
+        upload_lb=QLabel("Upload")
+        upload_lb.setFont(font)
+        self.upload_entry = QLineEdit()
+        self.upload_entry.setPlaceholderText("URL OF FILE")
+        self.upload_entry.setReadOnly(True)
+        upload_btn = QPushButton("Upload file")
+        upload_btn.clicked.connect(self.upload_file)
+        self.upload_bar = QProgressBar()
 
-        sendFileStatus_label = QLabel("Receiving file status")
-        self.listSendFile_status = QListWidget()
-        # self.sendFile_btn = QPushButton("Send file")
-        self.private_list = QComboBox()
+        download_lb=QLabel("Download")
+        download_lb.setFont(font)
+        self.download_entry = QLineEdit()
+        self.download_entry.setPlaceholderText("Enter name of the file saved in server")
+        download_btn = QPushButton("Download")
+        self.download_bar = QProgressBar()
 
+        self.private_list = QComboBox()# input receiver
+# Add layout --------------------------------------------------------
         self.right_layout.addWidget(info_status)
         self.right_layout.addWidget(listOnline_label)
         self.right_layout.addWidget(self.listOnline)
-        self.right_layout.addWidget(sendFileStatus_label)
-        self.right_layout.addWidget(self.listSendFile_status)
+
+        self.right_layout.addWidget(upload_lb)
+        self.right_layout.addWidget(self.upload_entry)
+        self.right_layout.addWidget(self.upload_bar)
+        self.right_layout.addWidget(upload_btn)
+
+        self.right_layout.addWidget(download_lb)
+        self.right_layout.addWidget(self.download_entry)
+        self.right_layout.addWidget(self.download_bar)
+        self.right_layout.addWidget(download_btn)
+
         self.right_layout.addWidget(self.private_list)
 
         self.h_layout.addLayout(self.left_layout)
@@ -667,7 +684,7 @@ Port: {client.port}
             print(chatJson)
             json_util.send(chatJson, client.s)
         # view info -----------------------------------------------------------
-        if action == "My profile" or action == "Find profile":
+        if action == "My profile" or action == "Find profile" and self.find_profile.text():
             profileJSON = json.dumps(
                 {"uuid": self.find_profile.text(), "action": action_util.Action.view_info, "session_id": session_id})
             json_util.send(profileJSON, client.s)
@@ -687,13 +704,23 @@ Port: {client.port}
         self.my_prof = myProfileWindow()
 
     def findProfile(self, profile):
-        inform = f"""
-        Name: {profile['name']}
-        Date of birth:{profile['dob']}
-        email:{profile['email']}
-        """
-        QMessageBox.information(self, profile["uuid"], inform, QMessageBox.Ok, QMessageBox.ok)
+        self.find_profile.setText("")
+        try:
+            inform = f"""
+Name: {profile['name']}
+Date of birth: {profile['dob']}
+email: {profile['email']}
+            """
+        except:
+            QMessageBox.information(self, "ERROR", "Not found!!!!", QMessageBox.Ok, QMessageBox.Ok)
+        else:
+            QMessageBox.information(self, profile["uuid"], inform, QMessageBox.Ok, QMessageBox.Ok)
 
+    def upload_file(self):
+        url = QFileDialog.getOpenFileName(self, "Choose a file", "", "All Files(*)")
+        self.upload_entry.setText(url[0])
+        if url:
+            pass
 
 class Communicate(QObject):
     print_chat = pyqtSignal(int, str)
