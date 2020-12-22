@@ -1,21 +1,31 @@
+import threading
 import FTP_core
 import socket
 import json
+from PyQt5.QtCore import *
+import time
 
 
+class FTPClient(QThread):
+    file_percent = pyqtSignal(int)
 
-class FTPClient:
-    def __init__(self, host_name):
+    def __init__(self, host_name, port):
+        super().__init__()
+        self.file = FTP_core.FTPCore()
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while 1:
             try:
-                host = input('Enter host name --> ')
-                self.s.connect((host, 5001))
+                self.s.connect((host_name, int(port)))
                 break
             except:
                 print("Couldn't connect to server")
 
-    def get_file(self, file_name):
+    def _get_file(self, json_data, root):
+        self.file.get(json_data, root, self.s)
+        self.s.recv(1)
+        print("Finish recv")
+
+    def get_file(self, file_name, root="upload"):
         header = FTP_core.Header()
         header.action = FTP_core.GET
         header.file_name = file_name
@@ -28,15 +38,23 @@ class FTPClient:
         data = data.decode()
         print(data)
         data = json.loads(data)
-        FTP_core.get(data, "download",self.s)
-        self.s.recv(1)
-        print("Finish recv")
+        threading.Thread(target=self._get_file, args=(data, root,))
 
-
-    def send_file(self, file):
-        FTP_core.send(file, "download", self.s)
+    def _send_file(self, file, root, callback=None):
+        self.file.send(file, root, self.s, callback)
         self.s.recv(1)
         print("send")
+
+    def send_file(self, file, root, bar):
+        ts = threading.Thread(target=self._send_file, args=(file, root,))
+        ts.start()
+        while ts.is_alive():
+            if self.file.ready:
+                value = self.file.byte * 100 / self.file.length
+                bar.setValue(value)
+
+    def __del__(self):
+        print("finish upload/download")
 
 
 if __name__ == '__main__':

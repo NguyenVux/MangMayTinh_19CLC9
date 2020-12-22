@@ -41,7 +41,7 @@ class FTPServer:
                 FTP_core.send(data["file_name"], "upload", connection)
             if data['action'] == FTP_core.SEND:
                 FTP_core.get(data, "upload", connection)
-            connection.send(b'1')
+            connection.send(b'')
             connection.close()
         except socket.error as err:
             if err.errno == errno.ECONNRESET:

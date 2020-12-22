@@ -19,6 +19,7 @@ from PyQt5 import QtCore
 from PyQt5 import QtGui
 import json_util
 import action_util
+import FTP_Client
 
 font = QFont("Arial", 10, 80)
 action = ""
@@ -465,7 +466,7 @@ class registerWindow(QWidget):
 
             if result["result"]:
                 QMessageBox.information(self, "Notification", "Successfull!!!", QMessageBox.Ok, QMessageBox.Ok)
-                dataJSON = json.dumps({"uuid": usernm,"name": fullnm, "dob": dob, "email": eml, "action": 'update_info',
+                dataJSON = json.dumps({"uuid": usernm, "name": fullnm, "dob": dob, "email": eml, "action": 'update_info',
                                        "session_id": session_id})
                 json_util.send(dataJSON, client.s)
 
@@ -720,7 +721,14 @@ email: {profile['email']}
         url = QFileDialog.getOpenFileName(self, "Choose a file", "", "All Files(*)")
         self.upload_entry.setText(url[0])
         if url:
-            pass
+            list_file = url[0].rsplit("/", 1)
+            ftp_sock = FTP_Client.FTPClient(client.host, client.port+1)
+            ftp_sock.file_percent.connect(self.set_value_upload)
+            ftp_sock.send_file(list_file[1], list_file[0],self.upload_bar)
+
+
+    def set_value_upload(self, value):
+        self.upload_bar.setValue(value)
 
 class Communicate(QObject):
     print_chat = pyqtSignal(int, str)

@@ -19,37 +19,47 @@ class Header:
     def to_json_str(self):
         return json.dumps(self.to_dict()) + "\r\n\r\n"
 
+class FTPCore:
+    def __init__(self):
+        self.byte = 0
+        self.length = 0
+        self.ready = False
 
-def send(file_name, root, client: socket):
-    header = Header()
-    header.action = SEND
-    header.file_name = file_name
-    header.length = 0
-    path = root + "/" + file_name
-    print(header.to_dict())
-    if os.path.exists(path):
-        header.length = os.stat(path).st_size
-        client.send(header.to_json_str().encode())
-        f = open(path, "rb")
-        sent = 0
-        while sent < header.length:
-            data = f.read(4096)
-            client.send(data)
-            sent += len(data)
-    else:
-        client.send(header.to_json_str().encode())
+    def send(self,file_name, root, client: socket, callback = None):
+        header = Header()
+        header.action = SEND
+        header.file_name = file_name
+        header.length = 0
+        path = root + "/" + file_name
+        print(header.to_dict())
+        if os.path.exists(path):
+            header.length = os.stat(path).st_size
+            self.length = header.length
+            client.send(header.to_json_str().encode())
+            f = open(path, "rb")
+            self.ready = True
+            self.byte = 0
+            while self.byte < header.length:
+                data = f.read(4096)
+                client.send(data)
+                self.byte += len(data)
+                if callback is not None:
+                    callback(self.byte)
+        else:
+            client.send(header.to_json_str().encode())
 
-
-def get(header, root, client: socket):
-    received = 0
-    print(header)
-    file = open(root + '/' + header["file_name"], "wb")
-    while received < header["length"]:
-        data = client.recv(1)
-        if len(data) > header["length"]:
-            data = data[0:header["length"]]
-        received += len(data)
-        file.write(data)
+    def get(self, header, root, client: socket):
+        self.byte = 0
+        print(header)
+        file = open(root + '/' + header["file_name"], "wb")
+        self.length = header["length"]
+        self.ready = True
+        while self.byte < header["length"]:
+            data = client.recv(1)
+            if len(data) > header["length"]:
+                data = data[0:header["length"]]
+            self.byte += len(data)
+            file.write(data)
 
 
 
