@@ -481,6 +481,8 @@ class registerWindow(QWidget):
 class mainWindow(QWidget):
     def __init__(self):
         global session_id
+        self.d = Communicate()
+        self.d.file_percent.connect(self.set_value_upload)
         super().__init__()
         self.title = 'Chat Room'
         self.left = 500
@@ -720,11 +722,12 @@ email: {profile['email']}
     def upload_file(self):
         url = QFileDialog.getOpenFileName(self, "Choose a file", "", "All Files(*)")
         self.upload_entry.setText(url[0])
+
         if url:
             list_file = url[0].rsplit("/", 1)
-            ftp_sock = FTP_Client.FTPClient(client.host, client.port+1)
-            ftp_sock.file_percent.connect(self.set_value_upload)
-            ftp_sock.send_file(list_file[1], list_file[0],self.upload_bar)
+            ftp_sock = FTP_Client.FTPClient(client.host, client.port + 1)
+            #ftp_sock.send_file(list_file[1], list_file[0], self.d.file_percent)
+            Thread(target=ftp_sock.send_file, args=(list_file[1], list_file[0], self.d.file_percent,)).start()
 
 
     def set_value_upload(self, value):
@@ -733,6 +736,7 @@ email: {profile['email']}
 class Communicate(QObject):
     print_chat = pyqtSignal(int, str)
     print_info = pyqtSignal(dict)
+    file_percent = pyqtSignal(int)
 
 class changePwdWindown(QWidget):
     def __init__(self):

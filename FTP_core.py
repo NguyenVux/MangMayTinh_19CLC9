@@ -31,7 +31,7 @@ class FTPCore:
         header.file_name = file_name
         header.length = 0
         path = root + "/" + file_name
-        print(header.to_dict())
+
         if os.path.exists(path):
             header.length = os.stat(path).st_size
             self.length = header.length
@@ -39,6 +39,7 @@ class FTPCore:
             f = open(path, "rb")
             self.ready = True
             self.byte = 0
+            print(header.to_dict())
             while self.byte < header.length:
                 data = f.read(4096)
                 client.send(data)

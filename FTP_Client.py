@@ -6,11 +6,10 @@ from PyQt5.QtCore import *
 import time
 
 
-class FTPClient(QThread):
-    file_percent = pyqtSignal(int)
+class FTPClient():
+
 
     def __init__(self, host_name, port):
-        super().__init__()
         self.file = FTP_core.FTPCore()
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         while 1:
@@ -51,8 +50,9 @@ class FTPClient(QThread):
         while ts.is_alive():
             if self.file.ready:
                 value = self.file.byte * 100 / self.file.length
-                bar.setValue(value)
-
+                bar.emit(value)
+        time.sleep(5)
+        bar.emit(0)
     def __del__(self):
         print("finish upload/download")
 
