@@ -94,7 +94,6 @@ class Server:
                 msg = json_util.receive(session["connection"]).decode()
                 if msg[0] == "{" and msg[-1] == "}":
                     msg = json.loads(msg)
-                    print(msg)
                     if msg["session_id"] == session_id:
                         self.__dictAction[msg["action"]](msg, session_id)
             except socket.error as error:
@@ -208,28 +207,22 @@ class Server:
                                        }), session["connection"])
 
     def __update_info(self, json_data, session_id):
-        session = self.__lstSession[session_id]
-        if self.__login_check(session_id):
-            query = {"uuid": session["uuid"]}
-            new_info = {"name": json_data["name"],
-                        "dob": json_data["dob"],
-                        "email": json_data['email']
-                        }
-            self.__dbObject.user_db.update(query, {"$set": new_info})
+        query = {"uuid": json_data["uuid"]}
+        new_info = {"name": json_data["name"],
+                    "dob": json_data["dob"],
+                    "email": json_data['email']
+                    }
+        self.__dbObject.user_db.update_one(query, {"$set": new_info})
 
     def __view_info(self,json_data, session_id):
         session = self.__lstSession[session_id]
         if self.__login_check(session_id):
             query = {"uuid": json_data["uuid"]}
-            print(json_data)
             result = self.__dbObject.user_db.find_one(query, {"_id": 0, "pwd": 0})
-            print("result:")
-            print(result)
             if result:
                 data = result
                 data |= {"result": True,
                          "action": json_data["action"]}
-                print(data)
                 json_util.send(json.dumps(data),
                                session["connection"])
                 return
