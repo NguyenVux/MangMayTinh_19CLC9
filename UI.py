@@ -465,7 +465,7 @@ class registerWindow(QWidget):
 
             if result["result"]:
                 QMessageBox.information(self, "Notification", "Successfull!!!", QMessageBox.Ok, QMessageBox.Ok)
-                dataJSON = json.dumps({"name": fullnm, "dob": dob, "email": eml, "action": 'update_info',
+                dataJSON = json.dumps({"uuid": usernm,"name": fullnm, "dob": dob, "email": eml, "action": 'update_info',
                                        "session_id": session_id})
                 json_util.send(dataJSON, client.s)
 

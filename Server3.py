@@ -94,6 +94,7 @@ class Server:
                 msg = json_util.receive(session["connection"]).decode()
                 if msg[0] == "{" and msg[-1] == "}":
                     msg = json.loads(msg)
+                    print(msg)
                     if msg["session_id"] == session_id:
                         self.__dictAction[msg["action"]](msg, session_id)
             except socket.error as error:
@@ -165,7 +166,7 @@ class Server:
             data |= {"result": result,
                      'action': json_data["action"]}
             json_util.send(json.dumps(data), session["connection"])
-
+            print(data)
     def __login_check(self, session_id):
         session = self.__lstSession[session_id]
         response = session.copy()
