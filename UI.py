@@ -702,6 +702,7 @@ Port: {client.port}
 
     def addMsg(self, user, msg):
         self.model.add_message(user, msg)
+        self.chat_print.scrollToBottom()
 
     def myProfile(self):
         self.my_prof = myProfileWindow()
