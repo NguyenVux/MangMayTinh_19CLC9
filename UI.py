@@ -683,7 +683,7 @@ Port: {client.port}
             # client.s.send(loginJSON.encode())
             receiver = self.private_list.currentText()
             if receiver != "all" and receiver:
-                self.model.add_message(USER_ME, username)
+                self.addMsg(USER_ME, username)
             print(chatJson)
             json_util.send(chatJson, client.s)
         # view info -----------------------------------------------------------
