@@ -27,7 +27,8 @@ def receive(sock: socket):
     i = 10
     while not (data.startswith(open_delimiter) and data.endswith(ending_delimiter)):
         data += sock.recv(1)
-    return f.decrypt(data[2:-2])
+    c = b'{'+f.decrypt(data[2:-2]) + b'}'
+    return c
 
 
 def send(json_data, sock: socket):
@@ -35,3 +36,7 @@ def send(json_data, sock: socket):
     json_data = json_data[1:-1]
     json_data = open_delimiter + f.encrypt(json_data.encode()) + ending_delimiter
     sock.send(json_data)
+
+
+if __name__ == "__main__":
+    pass
