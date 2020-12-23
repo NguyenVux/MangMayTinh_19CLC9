@@ -511,7 +511,7 @@ class mainWindow(QWidget):
     def mainDesign(self):
         ################ MENU BAR #############################
         self.bar = QMenuBar()
-        file_menu = self.bar.addMenu("File")
+        file_menu = self.bar.addMenu("Menu")
 
         my_profile = QAction("My profile", self)
         file_menu.addAction(my_profile)
@@ -618,40 +618,47 @@ Port: {client.port}
         printer = Communicate()
         printer.print_chat.connect(self.addMsg)
         printer.print_info.connect(self.findProfile)
-
-        while not flag:
-            # msg = client.s.recv(1204).decode()
-            msg = json_util.receive(client.s).decode()
-            msg = json.loads(msg)
-            if msg["action"] == "status_notify":
-                list_online = []
-                list_filter = []
-                self.listOnline.clear()
-                self.private_list.clear()
-                self.private_list.addItem("all")
-                for i in msg["user_list"]:
-                    self.listOnline.addItem(i)
-                    self.private_list.addItem(i)
-                    list_online.append(i)
-                if not userOnline:
-                    userOnline = list_online
-                else:
-                    list_filter = Diff(userOnline, list_online)
-                    for i in list_filter:
-                        if i in userOnline:
-                            printer.print_chat.emit(USER_THEM, "[server]: " + i + " left")
-                    userOnline = list_online
-            if msg["action"] == "send_msg":
-                if msg["sender"] == client.full_name:
-                    printer.print_chat.emit(USER_ME, msg['msg'])
-                else:
-                    if msg["private"] == 1:
-                        printer.print_chat.emit(USER_THEM, msg['sender'] + " (private): " + msg['msg'])
+        printer.print_error.connect(self.server_dead)
+        try:
+            while not flag:
+                # msg = client.s.recv(1204).decode()
+                msg = json_util.receive(client.s).decode()
+                msg = json.loads(msg)
+                if msg["action"] == "status_notify":
+                    list_online = []
+                    list_filter = []
+                    self.listOnline.clear()
+                    self.private_list.clear()
+                    self.private_list.addItem("all")
+                    for i in msg["user_list"]:
+                        self.listOnline.addItem(i)
+                        self.private_list.addItem(i)
+                        list_online.append(i)
+                    if not userOnline:
+                        userOnline = list_online
                     else:
-                        printer.print_chat.emit(USER_THEM, msg['sender'] + ": " + msg['msg'])
-            if msg["action"] == action_util.Action.view_info:
-                print(msg)
-                printer.print_info.emit(msg)
+                        list_filter = Diff(userOnline, list_online)
+                        for i in list_filter:
+                            if i in userOnline:
+                                printer.print_chat.emit(USER_THEM, "[server]: " + i + " left")
+                        userOnline = list_online
+                if msg["action"] == "send_msg":
+                    if msg["sender"] == client.full_name:
+                        printer.print_chat.emit(USER_ME, msg['msg'])
+                    else:
+                        if msg["private"] == 1:
+                            printer.print_chat.emit(USER_THEM, msg['sender'] + " (private): " + msg['msg'])
+                        else:
+                            printer.print_chat.emit(USER_THEM, msg['sender'] + ": " + msg['msg'])
+                if msg["action"] == action_util.Action.view_info:
+                    print(msg)
+                    printer.print_info.emit(msg)
+        except:
+            printer.print_error.emit("Server corrupted!!!!")
+    def server_dead(self, msg):
+        check=QMessageBox.warning(self, "ERROR", msg,QMessageBox.Ok, QMessageBox.Ok)
+        if(check ==QMessageBox.Ok):
+            os._exit(app.exec_())
 
     def input_handler(self, btn):
         global session_id
@@ -738,6 +745,7 @@ class Communicate(QObject):
     print_chat = pyqtSignal(int, str)
     print_info = pyqtSignal(dict)
     file_percent = pyqtSignal(int)
+    print_error=pyqtSignal(str)
 
 class changePwdWindown(QWidget):
     def __init__(self):
