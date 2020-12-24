@@ -45,22 +45,28 @@ class FTPCore:
                 client.send(data)
                 self.byte += len(data)
                 if callback is not None:
-                    callback(self.byte)
+                    callback(self.byte * 100 / self.length)
         else:
             client.send(header.to_json_str().encode())
 
-    def get(self, header, root, client: socket):
+    def get(self, header, root, client: socket, callback=None):
         self.byte = 0
         print(header)
         file = open(root + '/' + header["file_name"], "wb")
         self.length = header["length"]
         self.ready = True
+        if self.length==0:
+            if callback is not None:
+                callback(False)
+            return False
         while self.byte < header["length"]:
-            data = client.recv(1)
+            data = client.recv(1024)
             if len(data) > header["length"]:
                 data = data[0:header["length"]]
             self.byte += len(data)
             file.write(data)
-
+        if callback is not None:
+            callback(True)
+        return True
 
 
