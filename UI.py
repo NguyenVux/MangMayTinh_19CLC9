@@ -466,8 +466,9 @@ class registerWindow(QWidget):
 
             if result["result"]:
                 QMessageBox.information(self, "Notification", "Successfull!!!", QMessageBox.Ok, QMessageBox.Ok)
-                dataJSON = json.dumps({"uuid": usernm, "name": fullnm, "dob": dob, "email": eml, "action": 'update_info',
-                                       "session_id": session_id})
+                dataJSON = json.dumps(
+                    {"uuid": usernm, "name": fullnm, "dob": dob, "email": eml, "action": 'update_info',
+                     "session_id": session_id})
                 json_util.send(dataJSON, client.s)
 
                 ########## back to login window ############
@@ -498,7 +499,7 @@ class mainWindow(QWidget):
         self.printer.print_info.connect(self.findProfile)
         self.printer.print_error.connect(self.server_dead)
         self.printer.download_result.connect(lambda x: self.notify("Success", x))
-        self.printer.update_info.connect()
+        self.printer.update_info.connect(self.updateInfo)
 
         self.UI()
 
@@ -572,12 +573,12 @@ Host: {client.host}
 Port: {client.port}
         """)
         info_status.setFont(font)
-# layout view user online list -------------------------------------------------------
+        # layout view user online list -------------------------------------------------------
         listOnline_label = QLabel("Online")
         self.listOnline = QListWidget()
         self.listOnline.addItem("all")
-# layout upload and download file------------------------------------------------------
-        upload_lb=QLabel("Upload")
+        # layout upload and download file------------------------------------------------------
+        upload_lb = QLabel("Upload")
         upload_lb.setFont(font)
         self.upload_entry = QLineEdit()
         self.upload_entry.setPlaceholderText("URL OF FILE")
@@ -586,7 +587,7 @@ Port: {client.port}
         upload_btn.clicked.connect(self.upload_file_layout)
         self.upload_bar = QProgressBar()
 
-        download_lb=QLabel("Download")
+        download_lb = QLabel("Download")
         download_lb.setFont(font)
         self.download_entry = QLineEdit()
         self.download_entry.setPlaceholderText("Enter name of the file saved in server")
@@ -594,8 +595,8 @@ Port: {client.port}
         download_btn.clicked.connect(self.download_layout)
         self.download_bar = QProgressBar()
 
-        self.private_list = QComboBox()# input receiver
-# Add layout --------------------------------------------------------
+        self.private_list = QComboBox()  # input receiver
+        # Add layout --------------------------------------------------------
         self.right_layout.addWidget(info_status)
         self.right_layout.addWidget(listOnline_label)
         self.right_layout.addWidget(self.listOnline)
@@ -623,7 +624,6 @@ Port: {client.port}
         global client
         global session_id
         global userOnline
-
 
         try:
             while not flag:
@@ -658,20 +658,24 @@ Port: {client.port}
                             self.printer.print_chat.emit(USER_THEM, msg['sender'] + ": " + msg['msg'])
                 if msg["action"] == action_util.Action.view_info:
                     print(msg)
-                    if msg['uuid']==client.username:
-                        pass
-                    self.printer.print_info.emit(msg)
+                    if msg['uuid'] == client.username:
+                        self.printer.update_info.emit(msg)
+                    else:
+                        self.printer.print_info.emit(msg)
         except:
             self.printer.print_error.emit("Server corrupted!!!!")
+
     def server_dead(self, msg):
-        check=QMessageBox.warning(self, "ERROR", msg,QMessageBox.Ok, QMessageBox.Ok)
-        if(check ==QMessageBox.Ok):
+        check = QMessageBox.warning(self, "ERROR", msg, QMessageBox.Ok, QMessageBox.Ok)
+        if (check == QMessageBox.Ok):
             os._exit(app.exec_())
+
     def notify(self, msg, check):
         if check:
             QMessageBox.information(self, "Notification", msg, QMessageBox.Ok, QMessageBox.Ok)
         else:
             QMessageBox.warning(self, "Failed", "file name is not found", QMessageBox.Ok, QMessageBox.Ok)
+
     def input_handler(self, btn):
         global session_id
         global client
@@ -707,9 +711,9 @@ Port: {client.port}
             json_util.send(chatJson, client.s)
         # view info -----------------------------------------------------------
         if action == "My profile" or action == "Find profile" and self.find_profile.text():
-            uuid=self.find_profile.text()
-            if action=="My profile":
-                uuid=client.username
+            uuid = self.find_profile.text()
+            if action == "My profile":
+                uuid = client.username
             profileJSON = json.dumps(
                 {"uuid": uuid, "action": action_util.Action.view_info, "session_id": session_id})
             json_util.send(profileJSON, client.s)
@@ -749,26 +753,33 @@ email: {profile['email']}
         if url:
             list_file = url[0].rsplit("/", 1)
             ftp_sock = FTP_Client.FTPClient(client.host, client.port + 1)
-            #ftp_sock.send_file(list_file[1], list_file[0], self.d.file_percent)
-            #Thread(target=ftp_sock.ensd_file, args=(list_file[1], list_file[0], self.d.file_percent,)).start()
+            # ftp_sock.send_file(list_file[1], list_file[0], self.d.file_percent)
+            # Thread(target=ftp_sock.ensd_file, args=(list_file[1], list_file[0], self.d.file_percent,)).start()
             ftp_sock.send_file(list_file[1], list_file[0], self.d.file_percent)
+
     def download_layout(self):
-        filename =self.download_entry.text()
-        ftp_down= FTP_Client.FTPClient(client.host, client.port+1)
-        ftp_down.get_file(self.printer.download_result,filename,"download")
+        filename = self.download_entry.text()
+        ftp_down = FTP_Client.FTPClient(client.host, client.port + 1)
+        ftp_down.get_file(self.printer.download_result, filename, "download")
 
     def set_value_upload(self, value):
         self.upload_bar.setValue(value)
+
     def set_value_download(self, value):
         self.download_bar.setValue(value)
+
+    def updateInfo(self, info):
+        self.open_windown = updateWindown(info['name'], info['dob'], info['email'])
+
 
 class Communicate(QObject):
     print_chat = pyqtSignal(int, str)
     print_info = pyqtSignal(dict)
     file_percent = pyqtSignal(int)
-    print_error=pyqtSignal(str)
-    download_result=pyqtSignal(bool)
-    update_info=pyqtSignal(dict)
+    print_error = pyqtSignal(str)
+    download_result = pyqtSignal(bool)
+    update_info = pyqtSignal(dict)
+
 
 class changePwdWindown(QWidget):
     def __init__(self):
@@ -855,6 +866,7 @@ class myProfileWindow(QListWidget):
 
         form = QFormLayout()
 
+
 class updateWindown(QWidget):
     def __init__(self, name=None, dob=None, email=None):
         super(updateWindown, self).__init__()
@@ -863,7 +875,7 @@ class updateWindown(QWidget):
         self.top = 300
         self.width = 300
         self.height = 100
-        self.initUI(name,dob,email)
+        self.initUI(name, dob, email)
         self.show()
 
     def initUI(self, name=None, dob=None, email=None):
@@ -877,14 +889,20 @@ class updateWindown(QWidget):
 
         name_lb = QLabel("Full name")
         self.name_entry = QLineEdit()
+        if name:
+            self.name_entry.setText(name)
         form.addRow(name_lb, self.name_entry)
 
         dob_lb = QLabel("DOB")
         self.dob_entry = QLineEdit()
+        if dob:
+            self.dob_entry.setText(dob)
         form.addRow(dob_lb, self.dob_entry)
 
         email_lb = QLabel("Email")
         self.email_entry = QLineEdit()
+        if email:
+            self.email_entry.setText(email)
         form.addRow(email_lb, self.email_entry)
 
         btn = QPushButton("Update")
@@ -894,7 +912,14 @@ class updateWindown(QWidget):
         self.setLayout(self.mainLayout)
 
     def processing(self):
-        pass
+        global client
+        dataJSON = json.dumps({"uuid": client.username, "name": self.name_entry.text(), "dob": self.dob_entry.text(),
+                               "email": self.email_entry.text(), "action": 'update_info',
+                               "session_id": session_id})
+        json_util.send(dataJSON, client.s)
+        QMessageBox.information(self, "Notification", "Success! please load again!!!!", QMessageBox.Ok, QMessageBox.Ok)
+
+
 ##############start##############
 if __name__ == '__main__':
     client = Client()
