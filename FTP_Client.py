@@ -20,12 +20,12 @@ class FTPClient():
             except:
                 print("Couldn't connect to server")
 
-    def _get_file(self, json_data, root,callback):
-        self.file.get(json_data, root, self.s,callback)
+    def _get_file(self, json_data, root, callback, bar):
+        self.file.get(json_data, root, self.s, callback, bar)
         self.s.recv(1)
         print("Finish recv")
 
-    def get_file(self,  result,file_name, root="upload"):
+    def get_file(self,  result,file_name, bar, root="upload"):
         header = FTP_core.Header()
         header.action = FTP_core.GET
         header.file_name = file_name
@@ -38,7 +38,7 @@ class FTPClient():
         data = data.decode()
         print(data)
         data = json.loads(data)
-        threading.Thread(target=self._get_file, args=(data, root,lambda x:result.emit(x),)).start()
+        threading.Thread(target=self._get_file, args=(data, root,lambda x:result.emit(x), lambda a: bar.emit(a),)).start()
 
     def _send_file(self, file, root, callback=None):
         self.file.send(file, root, self.s, callback)

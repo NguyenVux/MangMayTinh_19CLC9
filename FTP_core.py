@@ -49,7 +49,7 @@ class FTPCore:
         else:
             client.send(header.to_json_str().encode())
 
-    def get(self, header, root, client: socket, callback=None):
+    def get(self, header, root, client: socket, callback=None, bar=None):
         self.byte = 0
         print(header)
         file = open(root + '/' + header["file_name"], "wb")
@@ -65,8 +65,11 @@ class FTPCore:
                 data = data[0:header["length"]]
             self.byte += len(data)
             file.write(data)
+            if bar is not None:
+                bar(self.byte*100/self.length)
         if callback is not None:
-            callback(True)
+                callback(True)
+
         return True
 
 

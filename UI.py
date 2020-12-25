@@ -500,6 +500,7 @@ class mainWindow(QWidget):
         self.printer.print_error.connect(self.server_dead)
         self.printer.download_result.connect(lambda x: self.notify("Success", x))
         self.printer.update_info.connect(self.updateInfo)
+        self.printer.download_percent.connect(self.set_value_download)
 
         self.UI()
 
@@ -760,7 +761,7 @@ email: {profile['email']}
     def download_layout(self):
         filename = self.download_entry.text()
         ftp_down = FTP_Client.FTPClient(client.host, client.port + 1)
-        ftp_down.get_file(self.printer.download_result, filename, "download")
+        ftp_down.get_file(self.printer.download_result, filename, self.printer.download_percent, "download")
 
     def set_value_upload(self, value):
         self.upload_bar.setValue(value)
@@ -779,6 +780,7 @@ class Communicate(QObject):
     print_error = pyqtSignal(str)
     download_result = pyqtSignal(bool)
     update_info = pyqtSignal(dict)
+    download_percent=pyqtSignal(int)
 
 
 class changePwdWindown(QWidget):
