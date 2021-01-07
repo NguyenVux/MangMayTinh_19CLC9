@@ -19,4 +19,5 @@
 | 2       | Đăng nhập, đăng ký             |
 | 3       | Đổi mật khẩu, Xem Profile           |
 | 4       | Gửi tin nhắn, xem người online                |
-| 5       | Gửi file, gửi riêng tư             |
+| 5       | Gửi file, gửi riêng tư, cập nhật profile             |
+| 6       | Download file, hoàn thành đồ án|
