@@ -659,7 +659,9 @@ Port: {client.port}
                             self.printer.print_chat.emit(USER_THEM, msg['sender'] + ": " + msg['msg'])
                 if msg["action"] == action_util.Action.view_info:
                     print(msg)
-                    if msg['uuid'] == client.username:
+                    if not msg['result']:
+                        self.printer.print_info.emit(msg)
+                    elif msg['uuid'] == client.username:
                         self.printer.update_info.emit(msg)
                     else:
                         self.printer.print_info.emit(msg)
@@ -736,27 +738,27 @@ Port: {client.port}
 
     def findProfile(self, profile):
         self.find_profile.setText("")
-        try:
-            inform = f"""
+        if not profile['result']:
+            QMessageBox.information(self, "ERROR", "Not found!!!!", QMessageBox.Ok, QMessageBox.Ok)
+            return
+        inform = f"""
 Name: {profile['name']}
 Date of birth: {profile['dob']}
 email: {profile['email']}
             """
-        except:
-            QMessageBox.information(self, "ERROR", "Not found!!!!", QMessageBox.Ok, QMessageBox.Ok)
-        else:
-            QMessageBox.information(self, profile["uuid"], inform, QMessageBox.Ok, QMessageBox.Ok)
+        QMessageBox.information(self, profile["uuid"], inform, QMessageBox.Ok, QMessageBox.Ok)
 
     def upload_file_layout(self):
         url = QFileDialog.getOpenFileName(self, "Choose a file", "", "All Files(*)")
-        self.upload_entry.setText(url[0])
+        if url[0]:
+            self.upload_entry.setText(url[0])
 
-        if url:
-            list_file = url[0].rsplit("/", 1)
-            ftp_sock = FTP_Client.FTPClient(client.host, client.port + 1)
-            # ftp_sock.send_file(list_file[1], list_file[0], self.d.file_percent)
-            # Thread(target=ftp_sock.ensd_file, args=(list_file[1], list_file[0], self.d.file_percent,)).start()
-            ftp_sock.send_file(list_file[1], list_file[0], self.d.file_percent)
+            if url:
+                list_file = url[0].rsplit("/", 1)
+                ftp_sock = FTP_Client.FTPClient(client.host, client.port + 1)
+                # ftp_sock.send_file(list_file[1], list_file[0], self.d.file_percent)
+                # Thread(target=ftp_sock.ensd_file, args=(list_file[1], list_file[0], self.d.file_percent,)).start()
+                ftp_sock.send_file(list_file[1], list_file[0], self.d.file_percent)
 
     def download_layout(self):
         filename = self.download_entry.text()
