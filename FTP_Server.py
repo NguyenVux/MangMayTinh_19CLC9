@@ -11,14 +11,13 @@ class FTPServer:
     def __init__(self, port, callback: callable):
         self.FTP_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         host = socket.gethostbyname(socket.gethostname())
-        self.FTP_socket.setsockopt()
         self.FTP_socket.bind((host, port))
         print("Starting FTP Server")
         print('Running on host: ' + str(host))
         print('Running on port: ' + str(port))
         print('')
         self.FTP_socket.listen(100)
-        self.FTP_socket.settimeout(self.timeout_seconds)
+        #self.FTP_socket.settimeout(self.timeout_seconds)
         threading.Thread(target=self.__listen_connection, args=(callback, )).start()
 
     def __listen_connection(self, callback: callable):
@@ -43,9 +42,10 @@ class FTPServer:
                 ftp.send(data["file_name"], "upload", connection)
             if data['action'] == FTP_core.SEND:
                 ftp.get(data, "upload", connection)
-                callback()
+
             connection.send(b'')
             connection.close()
+            callback()
         except socket.error as err:
             if err.errno == errno.ECONNRESET:
                 print("Client disconnected")

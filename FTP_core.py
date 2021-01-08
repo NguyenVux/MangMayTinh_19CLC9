@@ -67,7 +67,8 @@ class FTPCore:
             file.write(data)
             if bar is not None:
                 bar(self.byte*100/self.length)
-        if callback is not None:
+        if callback is not None and bar is not None:
+                bar(0)
                 callback(True)
 
         return True

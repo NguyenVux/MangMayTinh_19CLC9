@@ -69,9 +69,9 @@ class Server:
     def start_server(self):
         host = socket.gethostbyname(socket.gethostname())
         port = 5000  # int(input('Enter port to run the server on --> '))
-        self.ftp_server = FTP_Server.FTPServer(port + 1)
+        self.ftp_server = FTP_Server.FTPServer(port + 1, self.on_file)
         self.__socketServer.bind((host, port))
-        self.__socketServer.listen(100, self.on_file)
+        self.__socketServer.listen(100)
         print('Starting MSG server:')
         print('Running on host: ' + str(host))
         print('Running on port: ' + str(port))
@@ -80,8 +80,8 @@ class Server:
             self.__init_session(connection)
 
     def on_file(self):
-        data = {"action": Action.file_notify, "files": []}
-        data["files"] = listdir("/upload")
+        data = {"action": Action.file_notify, "files": listdir("upload")}
+        print(data)
         for u in self.__lstSession:
             json_util.send(json.dumps(data), self.__lstSession[u]["connection"])
 
@@ -184,6 +184,7 @@ class Server:
         key = "uuid"
         data = {"action": Action.status_notify, "user_list": []}
         self.on_file()
+        print(123)
         for u in self.__lstSession:
             if "name" in self.__lstSession[u]:
                 data["user_list"].append(self.__lstSession[u][key])

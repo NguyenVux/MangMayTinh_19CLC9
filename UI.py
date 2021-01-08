@@ -590,8 +590,8 @@ Port: {client.port}
 
         download_lb = QLabel("Download")
         download_lb.setFont(font)
-        self.download_entry = QLineEdit()
-        self.download_entry.setPlaceholderText("Enter name of the file saved in server")
+        self.listFile = QComboBox()
+        self.listFile = QComboBox()
         download_btn = QPushButton("Download")
         download_btn.clicked.connect(self.download_layout)
         self.download_bar = QProgressBar()
@@ -608,7 +608,7 @@ Port: {client.port}
         self.right_layout.addWidget(upload_btn)
 
         self.right_layout.addWidget(download_lb)
-        self.right_layout.addWidget(self.download_entry)
+        self.right_layout.addWidget(self.listFile)
         self.right_layout.addWidget(self.download_bar)
         self.right_layout.addWidget(download_btn)
 
@@ -649,6 +649,10 @@ Port: {client.port}
                             if i in userOnline:
                                 self.printer.print_chat.emit(USER_THEM, "[server]: " + i + " left")
                         userOnline = list_online
+                if msg["action"] == action_util.Action.file_notify :
+                    self.listFile.clear()
+                    for i in msg['files']:
+                        self.listFile.addItem(i)
                 if msg["action"] == "send_msg":
                     if msg["sender"] == client.full_name:
                         self.printer.print_chat.emit(USER_ME, msg['msg'])
@@ -752,19 +756,18 @@ email: {profile['email']}
         url = QFileDialog.getOpenFileName(self, "Choose a file", "", "All Files(*)")
         if url[0]:
             self.upload_entry.setText(url[0])
-
             if url:
                 list_file = url[0].rsplit("/", 1)
                 ftp_sock = FTP_Client.FTPClient(client.host, client.port + 1)
-                # ftp_sock.send_file(list_file[1], list_file[0], self.d.file_percent)
-                # Thread(target=ftp_sock.ensd_file, args=(list_file[1], list_file[0], self.d.file_percent,)).start()
                 ftp_sock.send_file(list_file[1], list_file[0], self.d.file_percent)
+                self.chat_entry.setText("["+ list_file[1]+"] has just been uploaded.")
+                self.send_btn.click()
 
     def download_layout(self):
-        filename = self.download_entry.text()
+        filename = self.listFile.currentText()
         ftp_down = FTP_Client.FTPClient(client.host, client.port + 1)
         ftp_down.get_file(self.printer.download_result, filename, self.printer.download_percent, "download")
-
+        self.set_value_download(0)
     def set_value_upload(self, value):
         self.upload_bar.setValue(value)
 
