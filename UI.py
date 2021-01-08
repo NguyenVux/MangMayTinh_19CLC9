@@ -16,6 +16,7 @@ from PyQt5.QtGui import QFont, QPixmap, QMovie
 from PyQt5.QtGui import QIcon, QTextDocument, QTextOption, QColor
 from PyQt5.QtCore import *
 from PyQt5 import QtCore
+from qtwidgets import PasswordEdit
 from PyQt5 import QtGui
 import json_util
 import action_util
@@ -301,8 +302,8 @@ class loginWindow(QWidget):
 
         passwrd = QLabel('Password')
         passwrd.setFont(font)
-        self.passwrd_entry = QLineEdit()
-        self.passwrd_entry.setEchoMode(QLineEdit.Password)
+        self.passwrd_entry = PasswordEdit()
+        #self.passwrd_entry.setEchoMode(QLineEdit.Password)
         self.passwrd_entry.setPlaceholderText('type your password...')
         self.passwrd_entry.returnPressed.connect(self.login)
         form.addRow(passwrd, self.passwrd_entry)
@@ -591,7 +592,8 @@ Port: {client.port}
         download_lb = QLabel("Download")
         download_lb.setFont(font)
         self.listFile = QComboBox()
-        self.listFile = QComboBox()
+        self.listFile.setEditable(True)
+        self.listFile.setMaxVisibleItems(4)
         download_btn = QPushButton("Download")
         download_btn.clicked.connect(self.download_layout)
         self.download_bar = QProgressBar()
@@ -771,6 +773,8 @@ email: {profile['email']}
             self.set_value_download(0)
     def set_value_upload(self, value):
         self.upload_bar.setValue(value)
+        if value>=100:
+            self.upload_entry.setText("")
 
     def set_value_download(self, value):
         self.download_bar.setValue(value)

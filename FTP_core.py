@@ -52,13 +52,13 @@ class FTPCore:
     def get(self, header, root, client: socket, callback=None, bar=None):
         self.byte = 0
         print(header)
-        file = open(root + '/' + header["file_name"], "wb")
         self.length = header["length"]
         self.ready = True
-        if self.length==0:
+        if self.length == 0:
             if callback is not None:
                 callback(False)
             return False
+        file = open(root + '/' + header["file_name"], "wb")
         while self.byte < header["length"]:
             data = client.recv(1024)
             if len(data) > header["length"]:
