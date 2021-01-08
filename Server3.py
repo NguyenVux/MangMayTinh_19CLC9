@@ -7,6 +7,7 @@ import random
 import FTP_Server
 from action_util import Action
 import json_util
+from os import listdir
 
 
 class User(dict):
@@ -70,13 +71,20 @@ class Server:
         port = 5000  # int(input('Enter port to run the server on --> '))
         self.ftp_server = FTP_Server.FTPServer(port + 1)
         self.__socketServer.bind((host, port))
-        self.__socketServer.listen(100)
+        self.__socketServer.listen(100, self.on_file)
         print('Starting MSG server:')
         print('Running on host: ' + str(host))
         print('Running on port: ' + str(port))
         while True:
             connection, address = self.__socketServer.accept()
             self.__init_session(connection)
+
+    def on_file(self):
+        data = {"action": Action.file_notify, "files": []}
+        data["files"] = listdir("/upload")
+        for u in self.__lstSession:
+            json_util.send(json.dumps(data), self.__lstSession[u]["connection"])
+
 
     def __init_session(self, connection: socket):
         user = User(connection)
@@ -175,6 +183,7 @@ class Server:
     def __notify_status(self, session_id):
         key = "uuid"
         data = {"action": Action.status_notify, "user_list": []}
+        self.on_file()
         for u in self.__lstSession:
             if "name" in self.__lstSession[u]:
                 data["user_list"].append(self.__lstSession[u][key])

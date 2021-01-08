@@ -8,9 +8,10 @@ import json
 class FTPServer:
     timeout_seconds = 180
 
-    def __init__(self, port):
+    def __init__(self, port, callback: callable):
         self.FTP_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         host = socket.gethostbyname(socket.gethostname())
+        self.FTP_socket.setsockopt()
         self.FTP_socket.bind((host, port))
         print("Starting FTP Server")
         print('Running on host: ' + str(host))
@@ -18,18 +19,18 @@ class FTPServer:
         print('')
         self.FTP_socket.listen(100)
         self.FTP_socket.settimeout(self.timeout_seconds)
-        threading.Thread(target=self.__listen_connection, args=()).start()
+        threading.Thread(target=self.__listen_connection, args=(callback, )).start()
 
-    def __listen_connection(self):
+    def __listen_connection(self, callback: callable):
         while True:
             try:
                 connection, address = self.FTP_socket.accept()
-                threading.Thread(target=self.__handle_connection, args=(connection,)).start()
+                threading.Thread(target=self.__handle_connection, args=(connection, callback,)).start()
             except:
                 pass
 
     @staticmethod
-    def __handle_connection(connection):
+    def __handle_connection(connection,callback: callable):
         try:
             data = b""
             while b"\r\n\r\n" not in data:
@@ -42,6 +43,7 @@ class FTPServer:
                 ftp.send(data["file_name"], "upload", connection)
             if data['action'] == FTP_core.SEND:
                 ftp.get(data, "upload", connection)
+                callback()
             connection.send(b'')
             connection.close()
         except socket.error as err:
