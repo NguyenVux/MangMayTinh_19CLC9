@@ -765,9 +765,10 @@ email: {profile['email']}
 
     def download_layout(self):
         filename = self.listFile.currentText()
-        ftp_down = FTP_Client.FTPClient(client.host, client.port + 1)
-        ftp_down.get_file(self.printer.download_result, filename, self.printer.download_percent, "download")
-        self.set_value_download(0)
+        if filename:
+            ftp_down = FTP_Client.FTPClient(client.host, client.port + 1)
+            ftp_down.get_file(self.printer.download_result, filename, self.printer.download_percent, "download")
+            self.set_value_download(0)
     def set_value_upload(self, value):
         self.upload_bar.setValue(value)
 
