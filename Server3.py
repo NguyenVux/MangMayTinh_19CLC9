@@ -184,7 +184,6 @@ class Server:
         key = "uuid"
         data = {"action": Action.status_notify, "user_list": []}
         self.on_file()
-        print(123)
         for u in self.__lstSession:
             if "name" in self.__lstSession[u]:
                 data["user_list"].append(self.__lstSession[u][key])
